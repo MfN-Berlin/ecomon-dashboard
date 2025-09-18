@@ -1,0 +1,335 @@
+/* sidebar */
+.sidebar {
+  margin-top: 10px !important;
+}
+
+/* Threshold container */
+.control-container {
+  background: #f8f9fa;
+  border-radius: 0.75em;
+  box-shadow: 0 0.125em 0.5em rgba(0,0,0,0.07);
+  margin: 0.625em 0.625em 1.125em 0.625em;
+  padding: 1em 1.5em;
+}
+
+/* Controls group container */
+.controls-group {
+  background: #f8f9fa;
+  border-radius: 0.75em;
+  /* Embossed shadow: light top-left, dark bottom-right */
+  box-shadow:
+    2px 2px 6px 0 rgba(0,0,0,0.10),   /* dark bottom-right */
+    -2px -2px 6px 0 rgba(255,255,255,0.7); /* light top-left */
+  margin: 0 0.625em 1.5em 0.625em;
+  padding: 1em 1.5em;
+  align-items: center;
+}
+
+/* Toggle buttons (sun & moon) */
+.sun-toggle-btn,
+.moon-toggle-btn,
+.twilight-toggle-btn {
+  font-size: 0.8em;
+  font-weight: 500;
+  padding: 0.3em 0.7em;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+  border: none;
+}
+#moonphase_toggle {
+  border: none;
+  font-size: 0.8em;
+  font-weight: 500;
+}
+.palette-dropdown-btn {
+  font-size: 0.8em;
+  font-weight: 500;
+}
+.btn:hover {
+  color: black!important;
+  background-color: #eeeeee !important;
+}
+.btn.active {
+  color: black;
+  background-color: #e0e7e5 !important;
+}
+
+/* Sun icon */
+.sun-toggle-btn .bi-sun {
+  vertical-align: middle;
+  margin-right: 0.25em;
+}
+
+/* Moon icon */
+.moon-toggle-btn .bi-moon-stars {
+  vertical-align: middle;
+  margin-right: 0.25em;
+}
+
+/* Palette dropdown button */
+.palette-dropdown-btn {
+  padding: 0.3em 0.5em;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.palette-dropdown-btn .bi-palette {
+  font-size: 1.1em;
+  vertical-align: middle;
+  color: black;
+  opacity: 0.5;
+}
+
+/* Site lists container as table look */
+.site-lists-container ul {
+  background: #fff;
+  border-radius: 0.5em;
+  box-shadow: 0 0.05em 0.15em rgba(0,0,0,0.06);
+  padding: 0.5em 0.5em 0.5em 1em;
+  margin: 0;
+  list-style: none;
+  border: 1px solid #e0e0e0;
+  max-height: 25em;
+  min-height: 25em;
+  overflow-y: auto;
+}
+
+.site-lists-container li {
+  padding: 0.25em 0.25em;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s;
+  border-radius: 0.3em;
+  cursor: pointer;
+  font-size: small;
+}
+
+.site-lists-container li:last-child {
+  border-bottom: none;
+}
+
+.site-lists-container li:hover {
+  background: #f5f7fa;
+}
+
+/* The scrollable area for the list itself */
+.site-list-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.site-lists-container label {
+  margin-bottom: 0.5em;
+  display: block;
+}
+
+.control-container .form-group {
+  margin-bottom: 0em;
+}
+
+#species_select + .selectize-control .selectize-input .item,
+#canvas_species {
+  font-style: italic;
+}
+
+#canvas_controls, #canvas_controls_activity_row {
+  font-size: small;
+  margin-bottom: 2em;
+  margin-left: 0.5em;
+}
+#canvas_controls_activity_row {
+  padding-top: 0.25em;
+  width: 100%;
+  margin-bottom: 0em;
+}
+
+#canvas_controls input,
+#canvas_controls .form-control,
+#canvas_controls .shiny-input-container {
+  min-height: 1.7em !important;
+  height: 1.7em !important;
+  padding-top: 0.1em !important;
+  padding-bottom: 0.1em !important;
+  padding-right: 1em;
+  font-size: 0.95em !important;
+}
+
+#canvas_controls .shiny-input-container {
+  border-bottom: 1px solid black;
+}
+
+#canvas_controls_activity_row .button-container  {
+  margin-right: 2em;
+}
+#canvas_controls_activity_row .button-container button {
+  margin-left: 1em;
+}
+
+/* Card styling for the main panel */
+.main-panel {
+  min-width: fit-content;
+}
+
+.card.shadow.rounded.p-3.mb-4 {
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  padding: 24px;
+  border: none;
+}
+.tabbable {
+  width: 996px;
+}
+/* Tab panel content border and padding */
+.tab-content > .tab-pane > div {
+  border: 1px solid #dee2e6;
+  border-top: none;
+  padding: 8px;
+  width: 996px;
+}
+
+.nav-tabs > li > a, .nav-tabs > li > a:hover {
+  color: #495057;
+}
+
+/* Ensure plot container is centered and has fixed width */
+.plot-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Moon timeline container positioning */
+.moon-timeline-container {
+  position: relative;
+  width: 100%;
+  margin-bottom: 5px;
+  padding-right: 50px; /* Match the colorbar width of heatmap */
+  box-sizing: border-box;
+}
+
+/* Remove the absolute positioning from moon timeline plot */
+.moon-timeline-plot {
+  width: 100%;
+}
+
+#moon_timeline {
+  width: 810px !important;
+}
+
+/* Heatmap plot size - fixed width */
+.heatmap-plot {
+  width: 100%; /* 100% of parent */
+  height: 440px;
+  padding: 0;
+  margin: 0;
+}
+
+/* Make sure the plot outputs fill their containers */
+.moon-timeline-container .shiny-plot-output,
+.heatmap-plot .shiny-plot-output {
+  width: 100% !important;
+}
+/* Ensure the inner plot graphics are properly aligned */
+#moon_timeline img  {
+  object-fit: contain;
+  width: 810px;
+  margin-left: 64px;  /* Align with heatmap plot area */
+}
+#heatmap img {
+  object-fit: contain;
+  width: 980px;
+}
+
+/* Align label right, input left, in control-container */
+.control-container .control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.control-container .control-row label {
+  flex: 0 0 7em;
+  text-align: right;
+  margin-bottom: 0;
+  margin-right: 0.5em;
+}
+
+.control-container .control-row .shiny-input-container,
+.control-container .control-row input,
+.control-container .control-row select {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Make threshold input narrower */
+#threshold {
+  max-width: 7em !important;
+  min-width: 7em !important;
+  width: 7em !important;
+}
+#threshold_container {
+  display: flex; align-items: center; margin-left: 2em; margin-right: 0.5em;
+}
+#threshold_container .form-group {
+  margin-bottom: 0;
+}
+
+.options-bar {
+  height: 48px;
+  padding: 0rem 1rem 0rem 1rem;
+  margin-bottom: 0rem!important;
+  width: 100%;
+}
+
+.form-control:disabled, .form-control[readonly] {
+  background-color: #ffffff !important;
+  opacity: 1;
+  border: none
+}
+
+/* Remove spinner controls from numericInput */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Ensure the spinner controls are hidden in Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Style for the Create Voucher and Download Data buttons */
+#download_data, #create_voucher {
+  font-size: 0.8em;
+  font-weight: 500;
+  padding: 0.3em 0.7em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  border: none;
+  border-radius: 0.5em;
+  background-color: #f8f9fa;
+  color: #495057;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+#download_data:hover, #create_voucher:hover {
+  background-color: #e9ecef;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+#download_data:active, #create_voucher:active {
+  background-color: #dee2e6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#download_data .bi, #create_voucher .bi {
+  font-size: 1.2em; /* Adjust icon size */
+  color: #495057;
+}

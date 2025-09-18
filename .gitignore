@@ -1,0 +1,10 @@
+__pycache__
+.ipynb_checkpoints
+data
+.vscode
+node_modules
+config.ini
+.env
+renv
+.Rprofile
+app_cache
