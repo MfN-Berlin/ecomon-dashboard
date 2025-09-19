@@ -178,14 +178,12 @@
   border: none;
 }
 .tabbable {
-  width: 996px;
 }
 /* Tab panel content border and padding */
 .tab-content > .tab-pane > div {
   border: 1px solid #dee2e6;
   border-top: none;
   padding: 8px;
-  width: 996px;
 }
 
 .nav-tabs > li > a, .nav-tabs > li > a:hover {
@@ -214,7 +212,7 @@
 }
 
 #moon_timeline {
-  width: 810px !important;
+  width: 516px !important;
 }
 
 /* Heatmap plot size - fixed width */
@@ -233,12 +231,10 @@
 /* Ensure the inner plot graphics are properly aligned */
 #moon_timeline img  {
   object-fit: contain;
-  width: 810px;
   margin-left: 64px;  /* Align with heatmap plot area */
 }
 #heatmap img {
   object-fit: contain;
-  width: 980px;
 }
 
 /* Align label right, input left, in control-container */

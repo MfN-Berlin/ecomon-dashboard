@@ -105,7 +105,7 @@ add_color_scale <- function(plot, colormap, threshold) {
       labels = labels,
       guide = guide_colorbar(
         barheight = barheight,       # Set the height of the color scale
-        barwidth = unit(15, "pt"),   # Fixed width
+        barwidth = unit(8, "pt"),   # Fixed width
         label.hjust = 0,             # Align labels to left
         label.vjust = 0.5,           # Center labels vertically
         title.position = "top",      # Position title at top
@@ -134,7 +134,7 @@ add_color_scale <- function(plot, colormap, threshold) {
       labels = labels,
       guide = guide_colorbar(
         barheight = barheight,       # Set the height of the color scale
-        barwidth = unit(15, "pt"),   # Fixed width
+        barwidth = unit(8, "pt"),   # Fixed width
         label.hjust = 0,             # Align labels to left
         label.vjust = 0.5,           # Center labels vertically
         title.position = "top",      # Position title at top
@@ -331,5 +331,5 @@ render_heatmap <- function(
       create_plot_theme()
 
     print(p)
-  }, res = 96)  # Set resolution to 96 DPI for better quality
+  }, res = 96, width = 900, height = 400)
 }

@@ -129,7 +129,7 @@ plot_moon_timeline <- function(
   px_width = 12,
   px_height = 12,
   colorbar_width_pct = 10,
-  plot_width_px = 810
+  plot_width_px = 476
 ) {
   # Set up the plot area
   par(mar = c(0, 0, 0, 0), oma = c(0, 0, 0, 0))
@@ -240,5 +240,5 @@ render_moon_timeline <- function(input, output, session, selected_year, moon_tog
 #      par(mar = c(0, 0, 0, 0))
 #      plot(NA, xlim = c(0, 1), ylim = c(0, 1), axes = FALSE, xlab = "", ylab = "")
     }
-  }, height = 30, width = 810)  # Dynamically set height
+  }, height = 30, width = 736)  # Dynamically set height
 }
