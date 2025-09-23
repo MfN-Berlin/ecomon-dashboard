@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y \
     nano \
     && rm -rf /var/lib/apt/lists/*
 
+# Remove example apps
+RUN rm -rf /srv/shiny-server/*
+
 # Copy renv.lock into the container
 COPY renv.lock /srv/shiny-server/dashboard/renv.lock
 

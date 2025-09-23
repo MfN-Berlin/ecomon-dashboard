@@ -1,4 +1,35 @@
-# Build download query for CSV export
+# -----------------------------------------------------------------------------
+# download_data.R
+# This file contains functions for building and executing GraphQL queries to
+# fetch data for CSV export. It includes:
+#
+# 1. `build_download_query`: Constructs a GraphQL query to retrieve model
+#    inference results based on the provided parameters.
+#
+# 2. `get_download_data`: Executes the GraphQL query, processes the response,
+#    and returns the data in a format suitable for CSV export.
+#
+# These functions are used to enable users to download activity-related data
+# directly from the dashboard.
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# Function: build_download_query
+# Description:
+#   Constructs a GraphQL query to fetch model inference results for a specific
+#   species, model, site, year, and confidence threshold.
+#
+# Parameters:
+#   - species_id (integer): The ID of the species to filter by.
+#   - model_id (integer): The ID of the model to filter by.
+#   - site_id (integer): The ID of the site to filter by.
+#   - year (integer): The year to filter by.
+#   - threshold (numeric): The confidence threshold (default = 0.5).
+#
+# Returns:
+#   - A string containing the GraphQL query.
+# -----------------------------------------------------------------------------
 build_download_query <- function(species_id, model_id, site_id, year, threshold = 0.5) {
   start_date <- sprintf("%d-01-01T00:00:00", year)
   end_date <- sprintf("%d-01-01T00:00:00", year + 1)
@@ -43,7 +74,22 @@ build_download_query <- function(species_id, model_id, site_id, year, threshold 
   return(download_query)
 }
 
-# Execute download query and return CSV-ready data
+# -----------------------------------------------------------------------------
+# Function: get_download_data
+# Description:
+#   Executes the GraphQL query built by `build_download_query`, validates the
+#   response, and processes the data into a CSV-ready format.
+#
+# Parameters:
+#   - species_id (integer): The ID of the species to filter by.
+#   - model_id (integer): The ID of the model to filter by.
+#   - site_id (integer): The ID of the site to filter by.
+#   - year (integer): The year to filter by.
+#   - threshold (numeric): The confidence threshold (default = 0.5).
+#
+# Returns:
+#   - A data.frame containing the processed data for CSV export.
+# -----------------------------------------------------------------------------
 get_download_data <- function(species_id, model_id, site_id, year, threshold = 0.5) {
   download_query <- build_download_query(species_id, model_id, site_id, year, threshold)
 

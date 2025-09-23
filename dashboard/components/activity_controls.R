@@ -1,3 +1,19 @@
+# -----------------------------------------------------------------------------
+# activity_controls.R
+# This file defines the UI components for controlling and displaying activity
+# information in the dashboard. It includes:
+#
+# 1. A dynamic text output (`acoustic_activity_text`) for displaying information
+#    about acoustic activity.
+#
+# 2. A download button for exporting data in CSV format.
+#    - The button includes an icon and tooltip for better user experience.
+#
+# These controls allow users to view and download activity-related data
+# directly from the dashboard.
+# -----------------------------------------------------------------------------
+
+
 activity_controls <- tags$div(
   class = "mt-4", # Add margin-top for spacing
   id = "canvas_controls_activity_row",

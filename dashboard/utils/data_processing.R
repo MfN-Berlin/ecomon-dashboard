@@ -6,121 +6,12 @@
 # Function to load and process data
 load_and_process_data <- function(species_id, model_id, site_id, year, threshold) {
   query_results <- execute_hasura_queries(species_id, model_id, site_id, year, threshold)
-  print(query_results$inference_results)  # Debug: Print the raw query results
   events_df <- process_query_results(query_results$all_records, query_results$inference_results)
   final_data <- transform_to_heatmap(events_df)
   final_data
 }
 
-# Build GraphQL queries
-build_queries <- function(species_id, model_id, site_id, year, threshold) {
-  start_date <- sprintf("%d-01-01T00:00:00", year)
-  end_date <- sprintf("%d-01-01T00:00:00", year + 1)
 
-  all_records_query <- sprintf('
-  query GetAllRecords {
-    records(
-      where: {
-        site_id: { _eq: %d }
-        record_datetime: {
-          _gte: "%s"
-          _lt: "%s"
-        }
-      },
-      order_by: { record_datetime: asc }
-    ) {
-      id
-      record_datetime
-    }
-  }
-  ', site_id, start_date, end_date)
-
-  inference_query <- sprintf('
-  query GetInferenceResults {
-    model_inference_results(
-      where: {
-        model_id: { _eq: %d }
-        label_id: { _eq: %d }
-        confidence: { _gte: %f }
-        record: {
-          site_id: { _eq: %d }
-          record_datetime: {
-            _gte: "%s"
-            _lt: "%s"
-          }
-        }
-      }
-    ) {
-      record_id
-      confidence
-    }
-  }
-  ', model_id, species_id, threshold, site_id, start_date, end_date)
-
-  list(
-    all_records = all_records_query,
-    inference = inference_query
-  )
-}
-
-# Get count of unique record_datetime above threshold
-get_count_above_threshold <- function(species_id, model_id, site_id, year, threshold = 0.5) {
-  start_date <- sprintf("%d-01-01T00:00:00", year)
-  end_date <- sprintf("%d-01-01T00:00:00", year + 1)
-
-  count_query <- sprintf('
-  query CountUniqueRecordDatetimes {
-    model_inference_results_aggregate(
-      where: {
-        model_id: { _eq: %d }
-        label_id: { _eq: %d }
-        confidence: { _gte: %f }
-        record: {
-          site_id: { _eq: %d }
-          record_datetime: {
-            _gte: "%s"
-            _lt: "%s"
-          }
-        }
-      }
-      distinct_on: record_id
-    ) {
-      aggregate {
-        count
-      }
-    }
-  }
-  ', model_id, species_id, threshold, site_id, start_date, end_date)
-
-  # Debug: Print the query
-  cat("Count query:\n", count_query, "\n\n")
-
-  # Execute the query
-  count_response <- POST(
-    url = hasura_url,
-    add_headers(.headers = hasura_headers),
-    body = list(query = count_query),
-    encode = "json"
-  )
-
-  # Validate response
-  if (http_status(count_response)$category != "Success") {
-    stop("Failed to fetch count from Hasura: ",
-         content(count_response, "text", encoding = "UTF-8"))
-  }
-
-  count_data <- content(count_response, "parsed", simplifyVector = TRUE)
-
-  # Check for GraphQL errors
-  if (!is.null(count_data$errors)) {
-    stop("Count query failed: ", paste(count_data$errors, collapse = ", "))
-  }
-
-  # Extract and return the count
-  count_result <- count_data$data$model_inference_results_aggregate$aggregate$count
-
-  return(count_result)
-}
 
 # Execute Hasura queries
 execute_hasura_queries <- function(species_id, model_id, site_id, year, threshold) {

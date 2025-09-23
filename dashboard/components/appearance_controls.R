@@ -1,3 +1,21 @@
+# -----------------------------------------------------------------------------
+# appearance_controls.R
+# This file defines the UI components for controlling the appearance of the
+# heatmap visualization. It includes:
+#
+# 1. A set of toggle buttons for enabling/disabling additional visual elements:
+#    - Sunset & Sunrise lines
+#    - Twilight lines
+#    - Moonphase visualization
+#
+# 2. A dropdown menu for selecting the colormap used in the heatmap.
+#    - Available colormaps: Viridis, Plasma, Cividis, Inferno, Magma, Grey
+#
+# These controls allow users to customize the visual representation of the
+# heatmap to suit their preferences or analysis needs.
+# -----------------------------------------------------------------------------
+
+
 # Named vector of available colormaps
 colormaps <- c(
   "Viridis" = "viridis",

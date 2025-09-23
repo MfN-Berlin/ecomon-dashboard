@@ -3,15 +3,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: akwamo-webservice-next-dashboard:latest
+    image: ghcr.io/mfn-berlin/akwamo-webservice-next-dashboard:latest
     container_name: akwamo-webservice-next-dashboard
     ports:
       - "3838:3838"
     environment:
-      - HASURA_ADMIN_SECRET=${HASURA_ADMIN_SECRET}
+      - HASURA_SECRET=${HASURA_SECRET}
       - HASURA_URL=${HASURA_URL}
     volumes:
-      - ./test:/srv/shiny-server/test
       - ./dashboard:/srv/shiny-server/dashboard
     restart: unless-stopped
 #    user: "${UID}:${GID}"
