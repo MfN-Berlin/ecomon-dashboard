@@ -237,8 +237,8 @@ render_moon_timeline <- function(input, output, session, selected_year, moon_tog
       plot_moon_timeline(start_date, end_date)
     } else {
       # Render an empty plot if moon_toggle is FALSE
-#      par(mar = c(0, 0, 0, 0))
-#      plot(NA, xlim = c(0, 1), ylim = c(0, 1), axes = FALSE, xlab = "", ylab = "")
+      par(mar = c(0, 0, 0, 0))
+      plot(NA, xlim = c(0, 1), ylim = c(0, 1), axes = FALSE, xlab = "", ylab = "")
     }
   }, height = 30, width = 736)  # Dynamically set height
 }

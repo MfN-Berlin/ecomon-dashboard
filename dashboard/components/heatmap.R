@@ -25,8 +25,8 @@ prepare_heatmap_data <- function(heatmap_data, threshold, year) {
   # Create a complete grid of all possible times and dates
   all_times <- sprintf(
     "%02d:%02d:00",
-    rep(0:23, each = 6),
-    rep(seq(0, 50, by = 10), 24)
+    rep(0:23, each = 60),
+    rep(0:59, 24)
   )
 
   # Create sequence of all dates in the year
@@ -61,6 +61,7 @@ prepare_heatmap_data <- function(heatmap_data, threshold, year) {
 #   ggplot object: The ggplot object with the color scale added.
 # Helper function to add color scale
 add_color_scale <- function(plot, colormap, threshold) {
+  message("Adding color scale with colormap: ", colormap, " and threshold: ", threshold)
   # Ensure threshold is numeric and has a valid value
   if (is.null(threshold) || length(threshold) == 0) {
     threshold <- 0.5
@@ -117,34 +118,58 @@ add_color_scale <- function(plot, colormap, threshold) {
       legend.key.height = barheight  # Match the height of the labels to the color scale
     )
   } else {
-    # Check if colormap is valid, default to "plasma" if not
-    valid_colormaps <- c("viridis", "magma", "plasma", "inferno", "cividis")
+    # Check if colormap is valid, default if not
+    valid_colormaps <- c("rdbu", "plasma", "turbo", "viridis", "magma", "inferno", "cividis")
     if (!(colormap %in% valid_colormaps)) {
-      warning(paste("Invalid colormap:", colormap, "- using 'plasma' instead"))
-      colormap <- "plasma"
+      warning(paste("Invalid colormap:", colormap, "- using 'RdBu' instead"))
+      colormap <- "rdbu"
     }
-
-    plot + scale_fill_viridis_c(
-      name = "Confidence",
-      option = colormap,
-      na.value = "transparent",
-      limits = c(0, 1),
-      oob = scales::squish,  # Use squish directly without custom function
-      breaks = breaks,
-      labels = labels,
-      guide = guide_colorbar(
-        barheight = barheight,       # Set the height of the color scale
-        barwidth = unit(8, "pt"),   # Fixed width
-        label.hjust = 0,             # Align labels to left
-        label.vjust = 0.5,           # Center labels vertically
-        title.position = "top",      # Position title at top
-        title.hjust = 0.5,           # Center title
-        frame.colour = "black",      # Add border around legend
-        ticks.colour = "black"       # Add tick marks
+    if (colormap == "rdbu") {
+      message("Using RdBu colormap")
+      plot + scale_fill_gradientn(
+        name = "Confidence",
+        colors = rdbu,
+        na.value = "transparent",
+        limits = c(0, 1),
+        oob = scales::squish,  # Use squish directly without custom function
+        breaks = breaks,
+        labels = labels,
+        guide = guide_colorbar(
+          barheight = barheight,       # Set the height of the color scale
+          barwidth = unit(8, "pt"),   # Fixed width
+          label.hjust = 0,             # Align labels to left
+          label.vjust = 0.5,           # Center labels vertically
+          title.position = "top",      # Position title at top
+          title.hjust = 0.5,           # Center title
+          frame.colour = "black",      # Add border around legend
+          ticks.colour = "black"       # Add tick marks
+        )
+      ) + theme(
+        legend.key.height = barheight  # Match the height of the labels to the color scale
       )
-    ) + theme(
-      legend.key.height = barheight  # Match the height of the labels to the color scale
-    )
+    } else {
+      plot + scale_fill_viridis_c(
+        name = "Confidence",
+        option = colormap,
+        na.value = "transparent",
+        limits = c(0, 1),
+        oob = scales::squish,  # Use squish directly without custom function
+        breaks = breaks,
+        labels = labels,
+        guide = guide_colorbar(
+          barheight = barheight,       # Set the height of the color scale
+          barwidth = unit(8, "pt"),   # Fixed width
+          label.hjust = 0,             # Align labels to left
+          label.vjust = 0.5,           # Center labels vertically
+          title.position = "top",      # Position title at top
+          title.hjust = 0.5,           # Center title
+          frame.colour = "black",      # Add border around legend
+          ticks.colour = "black"       # Add tick marks
+        )
+      ) + theme(
+        legend.key.height = barheight  # Match the height of the labels to the color scale
+      )
+    }
   }
 }
 
@@ -159,11 +184,11 @@ create_axis_scales <- function(year, heatmap_long = NULL) {
   hours <- 0:23
 
   # Create breaks for hourly intervals (00:00, 01:00, etc.)
-  hourly_breaks <- sprintf("%02d:00:00", hours)
-  hourly_labels <- sprintf("%02d:00", hours)
+  hourly_breaks <- sprintf("%02d:00:00", 0:23)
+  hourly_labels <- sprintf("%02d:00", 0:23)
 
   # Create all 10-minute intervals for the full range (but only show hourly ticks)
-  minutes_seq <- seq(0, 23 * 60 + 50, by = 10)  # 0 to 1430 minutes in 10-minute steps
+  minutes_seq <- seq(0, 23 * 60 + 59, by = 1)  # 0 to 1439 minutes in 1-min steps
   hours_all <- minutes_seq %/% 60
   minutes_all <- minutes_seq %% 60
   all_breaks <- sprintf("%02d:%02d:00", hours_all, minutes_all)
@@ -221,8 +246,8 @@ create_plot_theme <- function() {
 #   data.frame: A data frame with sunrise and sunset times for each date.
 get_sunrise_sunset_lines <- function(heatmap_long, lat, lon) {
   sun_times <- compute_sun_times(heatmap_long, lat, lon)
-  sunrise <- floor_time_to_10min(sun_times$sunrise)
-  sunset  <- floor_time_to_10min(sun_times$sunset)
+  sunrise <- floor_time_to_1min(sun_times$sunrise)
+  sunset  <- floor_time_to_1min(sun_times$sunset)
   unique_dates <- unique(heatmap_long$Date)
   data.frame(
     Date = rep(unique_dates, 2),
@@ -238,11 +263,25 @@ get_sunrise_sunset_lines <- function(heatmap_long, lat, lon) {
 #   lon (numeric): Longitude of the location.
 # Returns:
 #   data.frame: A data frame with dawn and dusk times for each date.
-get_dawn_dusk_lines <- function(heatmap_long, lat, lon) {
+get_dawn_dusk_lines <- function(heatmap_long, lat, lon, twilight_type) {
   sun_times <- compute_sun_times(heatmap_long, lat, lon)
-  dawn <- floor_time_to_10min(sun_times$dawn)
-  dusk <- floor_time_to_10min(sun_times$dusk)
+  message(paste("Computing dawn/dusk lines with twilight type:", twilight_type))
+  if (twilight_type == "civil") {
+    dawn <- sun_times$dawn
+    dusk <- sun_times$dusk
+  } else if (twilight_type == "nautical") {
+    dawn <- sun_times$nauticalDawn
+    dusk <- sun_times$nauticalDusk
+  } else if (twilight_type == "astronomical") {
+    dawn <- sun_times$nightEnd
+    dusk <- sun_times$night
+  }
+  dawn <- floor_time_to_1min(dawn)
+  dusk <- floor_time_to_1min(dusk)
   unique_dates <- unique(heatmap_long$Date)
+  message(head(data.frame(Date = rep(unique_dates, 2),
+             Time = c(dawn, dusk),
+             Type = rep(c("Dawn", "Dusk"), each = length(unique_dates))), 3))
   data.frame(
     Date = rep(unique_dates, 2),
     Time = c(dawn, dusk),
@@ -266,7 +305,7 @@ render_heatmap <- function(
     }
 
     colormap <- input$colormap
-    if (is.null(colormap) || colormap == "") colormap <- "plasma"
+    if (is.null(colormap) || colormap == "") colormap <- "rdbu"
 
     # Get threshold with fallback
     threshold_val <- url_threshold()
@@ -302,8 +341,11 @@ render_heatmap <- function(
     }
 
     # Add dawn/dusk lines if twilight_toggle is ON
+    twilight_type <- input$twilight_type
+    message(paste("Twilight type:", twilight_type))
     if (twilight_toggle) {
-      twilight_df <- get_dawn_dusk_lines(heatmap_long, lat, lon)
+      if (is.null(twilight_type) || twilight_type == "") twilight_type <- "civil"
+      twilight_df <- get_dawn_dusk_lines(heatmap_long, lat, lon, twilight_type)
       p <- p +
         geom_line(
           data = twilight_df,

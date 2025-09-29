@@ -30,6 +30,18 @@ $(document).on('shiny:inputchanged', function(event) {
 $(document).on('shiny:connected', function() {
   $('#colormapMenuButton').html('<span class=\"bi bi-palette\" style=\"font-size: 1.1em; vertical-align: middle; color: black; opacity: 0.5;\"></span> Color Map: Plasma');
   Shiny.setInputValue('colormap', $('#colormap').val(), {priority: 'event'});
+
+  // Simulate a click on sun_toggle if not already active
+  var sunBtn = $('#sun_toggle');
+  if (!sunBtn.hasClass('active')) {
+    sunBtn.trigger('click');
+  }
+
+  // Simulate a click on twilight_toggle if not already active
+  var twilightBtn = $('#twilight_toggle');
+  if (!twilightBtn.hasClass('active')) {
+    twilightBtn.trigger('click');
+  }
 });
 
 // Handle colormap dropdown selection and update button label

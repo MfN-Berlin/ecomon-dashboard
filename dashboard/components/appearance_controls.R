@@ -18,14 +18,34 @@
 
 # Named vector of available colormaps
 colormaps <- c(
-  "Viridis" = "viridis",
+  "RdBu" = "rdbu",
   "Plasma" = "plasma",
+  "Turbo" = "turbo",
+  "Viridis" = "viridis",
   "Cividis" = "cividis",
   "Inferno" = "inferno",
   "Magma" = "magma",
   "Grey" = "grey"
 )
+rdbu <- c(
+  "#0d11a0",  # Deep blue (low)
+  "#2166ac",
+  "#4393c3",
+  "#92c5de",
+  "#d1e5f0",
+  "#ffffff",  # White (mid)
+  "#fddbc7",
+  "#f4a582",
+  "#d6604d",
+  "#b2182b",
+  "#b30c1d"   # Deep red (high)
+)
 
+# Read default colormap from environment, fallback to "rdbu"
+default_colormap <- Sys.getenv("DEFAULT_COLORMAP", unset = "rdbu")
+if (!(tolower(default_colormap) %in% colormaps)) {
+  default_colormap <- "rdbu"
+}
 # Appearance controls UI component
 appearance_controls <- fluidRow(
   column(
@@ -44,17 +64,40 @@ appearance_controls <- fluidRow(
               ),
               "Sunset & Sunrise"
             ),
-            class = "btn btn-outline-secondary sun-toggle-btn"
+            class = "btn btn-outline-secondary sun-toggle-btn",
+            value = 0
           ),
-          actionButton(
-            inputId = "twilight_toggle",
-            label = tagList(
-              tags$span(
-                class = "bi bi-cloud-sun twilight-toggle-icon"
+#          actionButton(
+#            inputId = "twilight_toggle",
+#            label = tagList(
+#              tags$span(
+#                class = "bi bi-cloud-moon twilight-toggle-icon"
+#              ),
+#              "Twilight"
+#            ),
+#            class = "btn btn-outline-secondary twilight-toggle-btn"
+#          ),
+          div(
+            style = "display: flex; gap: 0.5em; align-items: center;",
+            actionButton(
+              inputId = "twilight_toggle",
+              label = tagList(
+                tags$span(class = "bi bi-cloud-moon twilight-toggle-icon"),
+                "Twilight"
               ),
-              "Twilight"
+              class = "btn btn-outline-secondary twilight-toggle-btn"
             ),
-            class = "btn btn-outline-secondary twilight-toggle-btn"
+            selectInput(
+              inputId = "twilight_type",
+              label = NULL,
+              choices = c(
+                "Civil" = "civil",
+                "Nautical" = "nautical",
+                "Astronomical" = "astronomical"
+              ),
+              selected = "civil",
+              width = "120px"
+            )
           ),
           actionButton(
             inputId = "moonphase_toggle",
@@ -64,8 +107,9 @@ appearance_controls <- fluidRow(
               ),
               "Moonphase"
             ),
-            class = "btn btn-outline-secondary moonphase-toggle-btn"
-          ),
+            class = "btn btn-outline-secondary moonphase-toggle-btn",
+            value = 1
+          )
         )
       )
     )
@@ -78,18 +122,16 @@ palette <- tags$div(
   tags$button(
     class = "btn btn-light dropdown-toggle palette-dropdown-btn",
     type = "button",
-    id = "colormapMenuButton",
+    id = "colormapMenuButton2",
     `data-bs-toggle` = "dropdown",
     `aria-expanded` = "false",
-    tags$span(
-      class = "bi bi-palette"
-    ),
-    " Color Map"
+    tags$span(class = "bi bi-palette"),
+    "Color map"
   ),
   tags$ul(
     class = "dropdown-menu",
     style = "font-size: 1em;",
-    `aria-labelledby` = "colormapMenuButton",
+    `aria-labelledby` = "colormapMenuButton2",
     lapply(
       names(colormaps),
       function(nm) {
@@ -104,5 +146,5 @@ palette <- tags$div(
       }
     )
   ),
-  tags$input(id = "colormap", type = "hidden", value = "plasma")
+  tags$input(id = "colormap", type = "hidden", value = default_colormap)
 )

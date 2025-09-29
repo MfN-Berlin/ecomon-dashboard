@@ -41,6 +41,7 @@
   border: none;
   font-size: 0.8em;
   font-weight: 500;
+  margin-left: 3em;
 }
 .palette-dropdown-btn {
   font-size: 0.8em;
@@ -65,6 +66,29 @@
 .moon-toggle-btn .bi-moon-stars {
   vertical-align: middle;
   margin-right: 0.25em;
+}
+
+#twilight_toggle{
+height: 30px;
+  max-height: 30px;
+  margin-left: 2em;
+}
+/* Style the visible selectize input */
+#twilight_type-selectized {
+  /* your styles here */
+}
+
+/* Style the selectize wrapper */
+.selectize-control.single {
+  height: 20px;
+  font-size: small;
+  margin-bottom: 0;
+  width: 150px;
+}
+
+/* Style the dropdown menu */
+.selectize-dropdown {
+  /* your styles here */
 }
 
 /* Palette dropdown button */

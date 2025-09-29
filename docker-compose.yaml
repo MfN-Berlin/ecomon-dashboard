@@ -10,6 +10,7 @@ services:
     environment:
       - HASURA_SECRET=${HASURA_SECRET}
       - HASURA_URL=${HASURA_URL}
+      - DEFAULT_COLORMAP=${DEFAULT_COLORMAP}
     volumes:
       - ./dashboard:/srv/shiny-server/dashboard
     restart: unless-stopped

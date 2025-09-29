@@ -282,7 +282,7 @@ server <- function(input, output, session) {
   # Heatmap rendering
   observe({
     if (!is.null(site_info())) {
-      sun_toggle <- !is.null(input$sun_toggle) && input$sun_toggle %% 2 == 1
+      sun_toggle <- is.null(input$sun_toggle) || input$sun_toggle %% 2 == 1
       twilight_toggle <- !is.null(input$twilight_toggle) && input$twilight_toggle %% 2 == 1
 
       render_heatmap(
@@ -308,9 +308,15 @@ server <- function(input, output, session) {
 
   # Moon timeline plot
   observe({
-    moon_toggle <- !is.null(input$moonphase_toggle) && input$moonphase_toggle %% 2 == 1
+    if (is.null(input$moonphase_toggle)) {
+      updateActionButton(session, "moonphase_toggle", value = 0)
+    }
+  })
+  observe({
+    moon_toggle <- is.null(input$moonphase_toggle) || input$moonphase_toggle %% 2 == 1
     render_moon_timeline(input, output, session, url_year, moon_toggle)
   })
+  render_moon_timeline(input, output, session, url_year, TRUE)
 }
 
 # Run the Shiny app
