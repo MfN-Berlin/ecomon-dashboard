@@ -223,11 +223,12 @@ height: 30px;
 
 /* Moon timeline container positioning */
 .moon-timeline-container {
-  position: relative;
+position: relative;
   width: 100%;
-  margin-bottom: 5px;
-  padding-right: 50px; /* Match the colorbar width of heatmap */
+  margin-bottom: -25px;
   box-sizing: border-box;
+  padding-bottom: 0;
+  z-index: 1000;
 }
 
 /* Remove the absolute positioning from moon timeline plot */
@@ -242,7 +243,7 @@ height: 30px;
 /* Heatmap plot size - fixed width */
 .heatmap-plot {
   width: 100%; /* 100% of parent */
-  height: 440px;
+  height: 400px;
   padding: 0;
   margin: 0;
 }
@@ -352,4 +353,14 @@ input[type="number"] {
 #download_data .bi, #create_voucher .bi {
   font-size: 1.2em; /* Adjust icon size */
   color: #495057;
+}
+
+/** heatmap plotly controls */
+.modebar-container {
+  top: 30px !important;
+  right: 10px !important;
+  width: 51px !important;
+}
+.modebar-container .modebar-group {
+  opacity: 1!important;
 }

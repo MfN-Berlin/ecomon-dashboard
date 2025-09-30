@@ -65,7 +65,11 @@ ui <- fluidPage(
                 # plot heatmap
                 tags$div(
                   class = "heatmap-plot",
-                  plotOutput("heatmap", height = "440px")
+                  plotlyOutput(
+                    "heatmap",
+                    width = "900px",
+                    height = "400px"
+                  )
                 ),
                 # heatmap options bar
                 tags$div(

@@ -92,7 +92,7 @@ add_color_scale <- function(plot, colormap, threshold) {
   )
 
   # Set the height of the color scale
-  barheight <- unit(200, "pt")  # Fixed height for the color scale
+  barheight <- unit(500, "pt")  # Fixed height for the color scale
 
   if (colormap == "grey") {
     plot + scale_fill_gradient(
@@ -294,7 +294,7 @@ render_heatmap <- function(
   input, output, session, heatmap_data, selected_year, url_threshold,
   sun_toggle, twilight_toggle, lat, lon
 ) {
-  output$heatmap <- renderPlot({
+  output$heatmap <- plotly::renderPlotly({
     # Force evaluation of heatmap_data
     heatmap_result <- heatmap_data()  # This evaluates the reactive
     if (is.null(heatmap_result)) {
@@ -321,9 +321,15 @@ render_heatmap <- function(
 
     # Prepare data
     heatmap_long <- prepare_heatmap_data(heatmap_result, threshold_val, year)
+    # tooltip text
+    heatmap_long$text <- paste0(
+      "Date: ", heatmap_long$Date, "\n",
+      "Time: ", heatmap_long$Time, "\n",
+      "Value: ", ifelse(heatmap_long$Value == -1, 0, heatmap_long$Value)
+    )
 
     # Create base plot
-    p <- ggplot(heatmap_long, aes(x = Date, y = Time, fill = Value)) +
+    p <- ggplot(heatmap_long, aes(x = Date, y = Time, fill = Value, text = text)) +
       geom_raster(interpolate = FALSE)
 
     # Add sunrise/sunset lines if sun_toggle is ON
@@ -372,6 +378,25 @@ render_heatmap <- function(
       ) +
       create_plot_theme()
 
-    print(p)
-  }, res = 96, width = 900, height = 400)
+    plt <- plotly::ggplotly(p, tooltip = "text")
+
+    # Tweak the plotly object for better appearance
+    for (i in seq_along(plt$x$data)) {
+      # Make lines transparent to hover
+      if (plt$x$data[[i]]$type == "scatter" && plt$x$data[[i]]$mode == "lines") {
+        plt$x$data[[i]]$hoverinfo <- "skip"
+      }
+    }
+    plotly::config(
+      plt,
+      modeBarButtonsToRemove = c(
+        "toImage", "autoScale2d",
+        "select2d", "lasso2d",
+        "hoverClosestCartesian", "hoverCompareCartesian",
+        "toggleSpikelines"
+      ),
+      modeBarButtonsToAdd = c("zoomIn2d", "zoomOut2d", "pan2d", "resetScale2d"),
+      displaylogo = FALSE
+    )
+  })
 }

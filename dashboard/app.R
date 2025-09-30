@@ -29,6 +29,7 @@ library(jsonlite)
 library(ini)
 library(data.table)
 library(suncalc)
+library(plotly)
 
 # Source external files
 source("ui.R")

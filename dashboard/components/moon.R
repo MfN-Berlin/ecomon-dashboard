@@ -220,7 +220,7 @@ plot_moon_timeline <- function(
   }
 
   # Add a divider line at the bottom
-  abline(h = 0, col = "gray", lwd = 0.5)
+  # abline(h = 0, col = "gray", lwd = 0.5)
 }
 
 # Function to handle moon timeline rendering
