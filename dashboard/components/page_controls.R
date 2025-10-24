@@ -1,96 +1,98 @@
-# ------------------------------------------------------------------------------
-# page_controls.R
-#
-# This file defines the 'page controls' UI component.
-#
-# Usage:
-#   - Source this file in your ui.R with:
-#       source("page_controls.R", local = TRUE)
-#   - Make sure the colormaps vector is not redefined elsewhere in your app.
-#   - Ensure the Bootstrap Icons CDN is loaded in your UI (see ui.R).
-# ------------------------------------------------------------------------------
+source("components/appearance_controls.R")
 
-# Read the list of models from data/models.R
-# make this dynamic / read from API
-source("data/models.R", local = TRUE)
-# Assumes data/models.R defines a variable named model_df (or similar) with your models
+# Threshold input
+threshold_input <- tags$div(
+  id = "threshold_container",
+  style = "position: absolute; top: 1em; gap: 0.5em;",
+  tags$label("Threshold", `for` = "threshold", style = "margin-top: -1em; white-space: nowrap; margin-right: 0.5em; font-size: small"),
+  numericInput(
+    inputId = "threshold",
+    label = NULL,
+    value = 0.5,
+    min = 0.1,
+    max = 1,
+    step = 0.001,
+    width = "7em"
+  ),
+  tags$small(
+    "Range: 0.01 to 1.00",
+    style = "margin-top: -1em; color: #6c757d; white-space: nowrap; font-size: 0.75em;" # Hint styling
+  )
+)
 
+# Settings button
+settings_button <- tags$div(
+  style = "display: flex; align-items: center; margin-left: auto;", # Push cog button to the right
+  actionButton(
+    inputId = "settings_btn",
+    label = NULL,
+    icon = icon("cog"),
+    class = "btn btn-outline-secondary",
+    style = "border: none; background: none; color: #6c757d; font-size: 1.2em;",
+    title = "Settings",
+    `data-bs-toggle` = "modal",
+    `data-bs-target` = "#settingsModal"
+  )
+)
 
-# UI for the two lists container of sites
-site_lists_container <- tags$div(
-  class = "control-container",
+# Settings modal dialog
+settings_modal <- tags$div(
+  class = "modal fade",
+  id = "settingsModal",
+  tabindex = "-1",
+  `aria-labelledby` = "settingsModalLabel",
+  `aria-hidden` = "true",
   tags$div(
-    class = "site-lists-container",
-    style = "display: flex; gap: 2em; margin-bottom: 1em;",
-    # Left list
+    class = "modal-dialog",
     tags$div(
-      style = "flex: 1 1 0;",
-      tags$label("Sites"),
+      class = "modal-content",
       tags$div(
-        class = "site-list-scroll",
-        style = "height: 25em; overflow-y: auto;",
-        uiOutput("site_list_ui")
-      )
-    ),
-    # Right list
-    tags$div(
-      style = "flex: 1 1 0;",
-      tags$label("Selected"),
+        class = "modal-header",
+        tags$h5(class = "modal-title", id = "settingsModalLabel", "Settings"),
+        tags$button(
+          type = "button",
+          class = "btn-close",
+          `data-bs-dismiss` = "modal",
+          `aria-label` = "Close"
+        )
+      ),
       tags$div(
-        class = "site-list-scroll",
-        style = "height: 25em; overflow-y: auto;",
-        uiOutput("selected_site_ui")
+        class = "modal-body",
+        tabsetPanel(
+          id = "settings_tabs", # ID for the tab panel
+          type = "tabs",        # Use tabs style
+          tabPanel(
+            title = "Heatmap",  # Tab title
+            appearance_controls,
+            palette
+          )
+        )
+      ),
+      tags$div(
+        class = "modal-footer",
+        # Add a row with Close and Reset buttons
+        tags$div(
+          style = "display: flex; justify-content: flex-end; width: 100%;",
+          tags$button(
+            type = "button",
+            class = "btn btn-secondary",
+            `data-bs-dismiss` = "modal",
+            "Close"
+          ),
+        )
       )
     )
   )
 )
 
-# UI for the model dropdown
-model_dropdown <- tags$div(
-  class = "control-row",
-  tags$label("Classifier", `for` = "model_select"),
-  selectInput(
-    inputId = "model_select",
-    label = NULL,
-    choices = setNames(model_df$id, model_df$title),
-    selected = if (!is.null(model_df$id) && length(model_df$id) > 0) model_df$id[1] else NULL,
-    width = "15em"
-  )
-)
-
-# Time period selector UI function
-time_period_selector <- tags$div(
-  class = "control-row",
-  tags$label("Year", `for` = "time_period"),
-  selectInput(
-    inputId = "time_period",
-    label = NULL,
-    choices = c("2023", "2024", "2025"),
-    selected = "2025",
-    width = "10em"
-  )
-)
-
-# Species selector UI component
-species_selector <- tags$div(
-  class = "control-row",
-  tags$label("Species", `for` = "species_select"),
-  selectInput(
-    inputId = "species_select",
-    label = NULL,
-    choices = c("Strix aluco"),
-    selected = "Strix aluco",
-    width = "15em"
-  )
-)
-
-# Page controls UI component
+# Add horizontal bar above the main panel
 page_controls <- tagList(
   tags$div(
-    class = "control-container",
-    model_dropdown,
-    site_lists_container,
-    time_period_selector,
-    species_selector
+    class = "card shadow rounded p-3 mb-4", # Styling for the container
+    style = "display: flex; justify-content: space-between;", # Flexbox layout
+    # Threshold input
+    threshold_input,
+    settings_button,
+    settings_modal
   )
 )

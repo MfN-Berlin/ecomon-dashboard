@@ -33,7 +33,7 @@
 # -----------------------------------------------------------------------------
 parse_url_parameters <- function(
   session,
-  url_threshold, url_site_ids, url_species_id, url_model_id, url_year
+  url_site_ids, url_species_id, url_model_id, url_year, url_threshold
 ) {
   # Access the URL search string
   url_search <- session$clientData$url_search
@@ -75,9 +75,10 @@ parse_url_parameters <- function(
 
     # Threshold
     if (!is.null(query$threshold)) {
-      threshold <- as.numeric(query$threshold)
-      updateTextInput(session, "canvas_threshold", value = threshold)
-      url_threshold(threshold)
+      threshold_val <- as.numeric(query$threshold)
+      if (!is.na(threshold_val) && threshold_val >= 0.01 && threshold_val <= 1.0) {
+        url_threshold(threshold_val)
+      }
     }
   }
 }

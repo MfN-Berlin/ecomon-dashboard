@@ -291,7 +291,7 @@ get_dawn_dusk_lines <- function(heatmap_long, lat, lon, twilight_type) {
 
 # Function to handle heatmap rendering
 render_heatmap <- function(
-  input, output, session, heatmap_data, selected_year, url_threshold,
+  input, output, session, heatmap_data, selected_year, threshold_reactive,
   sun_toggle, twilight_toggle, lat, lon
 ) {
   output$heatmap <- plotly::renderPlotly({
@@ -308,7 +308,7 @@ render_heatmap <- function(
     if (is.null(colormap) || colormap == "") colormap <- "rdbu"
 
     # Get threshold with fallback
-    threshold_val <- url_threshold()
+    threshold_val <- threshold_reactive()
 
     # Get the current year from URL/input
     year <- tryCatch({
@@ -395,7 +395,7 @@ render_heatmap <- function(
         "hoverClosestCartesian", "hoverCompareCartesian",
         "toggleSpikelines"
       ),
-      modeBarButtonsToAdd = c("zoomIn2d", "zoomOut2d", "pan2d", "resetScale2d"),
+      modeBarButtonsToAdd = c("zoom2d", "zoomIn2d", "zoomOut2d", "pan2d", "resetScale2d"),
       displaylogo = FALSE
     )
   })

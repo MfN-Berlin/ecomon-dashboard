@@ -27,7 +27,7 @@
 
 /* Toggle buttons (sun & moon) */
 .sun-toggle-btn,
-.moon-toggle-btn,
+.moonphase-toggle-btn,
 .twilight-toggle-btn {
   font-size: 0.8em;
   font-weight: 500;
@@ -35,13 +35,17 @@
   display: flex;
   align-items: center;
   gap: 0.25em;
-  border: none;
 }
+
+.sun-toggle-btn, .moonphase-toggle-btn,
+#twilight_container .form-group {
+  width: 100%;
+}
+
+
 #moonphase_toggle {
-  border: none;
   font-size: 0.8em;
   font-weight: 500;
-  margin-left: 3em;
 }
 .palette-dropdown-btn {
   font-size: 0.8em;
@@ -71,7 +75,6 @@
 #twilight_toggle{
 height: 30px;
   max-height: 30px;
-  margin-left: 2em;
 }
 /* Style the visible selectize input */
 #twilight_type-selectized {
@@ -83,7 +86,6 @@ height: 30px;
   height: 20px;
   font-size: small;
   margin-bottom: 0;
-  width: 150px;
 }
 
 /* Style the dropdown menu */
@@ -210,6 +212,14 @@ height: 30px;
   padding: 8px;
 }
 
+.modal-body .tab-content {
+  border: 1px solid #dee2e6;
+  border-top: none;
+}
+.modal-body .tab-content > .tab-pane > div {
+  border: none;
+}
+
 .nav-tabs > li > a, .nav-tabs > li > a:hover {
   color: #495057;
 }
@@ -292,17 +302,31 @@ position: relative;
   width: 7em !important;
 }
 #threshold_container {
-  display: flex; align-items: center; margin-left: 2em; margin-right: 0.5em;
-}
-#threshold_container .form-group {
-  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Align to the left */
+  gap: 0.5em; /* Add spacing between elements */
+  margin-left: 0; /* Remove unnecessary left margin */
+  margin-right: 0; /* Remove unnecessary right margin */
 }
 
 .options-bar {
-  height: 48px;
-  padding: 0rem 1rem 0rem 1rem;
-  margin-bottom: 0rem!important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Ensure elements are spaced out */
+  height: 48px; /* Consistent height */
+  padding: 0 1rem; /* Add padding */
   width: 100%;
+}
+
+#threshold {
+  max-width: 7em !important;
+  min-width: 7em !important;
+  width: 7em !important;
+}
+
+#settings_btn {
+  margin-left: auto; /* Push the cog button to the far right */
 }
 
 .form-control:disabled, .form-control[readonly] {
@@ -311,17 +335,6 @@ position: relative;
   border: none
 }
 
-/* Remove spinner controls from numericInput */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Ensure the spinner controls are hidden in Firefox */
-input[type="number"] {
-  -moz-appearance: textfield;
-}
 
 /* Style for the Create Voucher and Download Data buttons */
 #download_data, #create_voucher {
@@ -363,4 +376,16 @@ input[type="number"] {
 }
 .modebar-container .modebar-group {
   opacity: 1!important;
+}
+
+/* Hide spinners/scrollers for canvas_threshold input only */
+#canvas_threshold::-webkit-outer-spin-button,
+#canvas_threshold::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#canvas_threshold[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

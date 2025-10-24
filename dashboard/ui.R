@@ -22,9 +22,8 @@
 #   responsive and user-friendly interface.
 # -----------------------------------------------------------------------------
 
-
+source("components/page_controls.R")
 source("components/canvas_controls.R")
-source("components/appearance_controls.R")
 source("components/activity_controls.R")
 
 ui <- fluidPage(
@@ -43,6 +42,7 @@ ui <- fluidPage(
   # Main content without sidebar
   div(
     class = "container-fluid",
+    page_controls,
     div(
       class = "main-panel",
       tags$div(
@@ -71,12 +71,6 @@ ui <- fluidPage(
                     height = "400px"
                   )
                 ),
-                # heatmap options bar
-                tags$div(
-                  class = "options-bar d-flex align-items-center justify-content-between mb-3",
-                  appearance_controls,
-                  palette
-                )
               )
             )
           ),

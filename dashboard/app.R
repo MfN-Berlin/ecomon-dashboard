@@ -172,11 +172,14 @@ register_download_handler <- function(
 # -----------------------------------------------------------------------------
 server <- function(input, output, session) {
   # Reactive values for URL parameters
-  url_threshold <- reactiveVal(NULL)
   url_site_ids <- reactiveVal(NULL)
   url_species_id <- reactiveVal(NULL)
   url_model_id <- reactiveVal(NULL)
   url_year <- reactiveVal(NULL)
+  url_threshold <- reactiveVal(NULL)
+
+  # Reactive value for threshold
+  threshold <- reactiveVal(0.5)
 
   # site info from Hasura
   site_info <- reactiveVal(NULL)
@@ -191,9 +194,31 @@ server <- function(input, output, session) {
   observe({
     parse_url_parameters(
       session,
-      url_threshold, url_site_ids, url_species_id,
-      url_model_id, url_year
+      url_site_ids, url_species_id,
+      url_model_id, url_year, url_threshold
     )
+  })
+
+  # Initialize threshold from URL parameter or use default
+  observe({
+    if (!is.null(url_threshold())) {
+      threshold(url_threshold())
+      # Update the UI inputs to reflect the URL threshold
+      updateNumericInput(session, "threshold", value = url_threshold())
+      updateNumericInput(session, "canvas_threshold", value = url_threshold())
+    }
+  })
+
+  # Debounced threshold input (waits 500ms after user stops typing)
+  threshold_debounced <- debounce(reactive(input$threshold), 500)
+
+  # Update threshold reactive value when debounced input changes
+  observeEvent(threshold_debounced(), {
+    if (!is.null(threshold_debounced()) && !is.na(threshold_debounced())) {
+      threshold(threshold_debounced())
+      # Update canvas_threshold to keep them in sync
+      updateNumericInput(session, "canvas_threshold", value = threshold_debounced())
+    }
   })
 
   # Fetch species information when species_id changes
@@ -245,13 +270,13 @@ server <- function(input, output, session) {
   observe({
     if (!is.null(url_species_id()) && !is.null(url_model_id()) &&
           !is.null(url_site_ids()) && !is.null(url_year()) &&
-          !is.null(url_threshold()) && !is.null(site_info()) &&
+          !is.null(site_info()) &&
           !is.null(species_info())) {
       register_download_handler(
         output, url_species_id(), species_info()$name, url_model_id(),
         url_site_ids()[1],  # Use the first site from the list
         site_info()$name,  # Use site name from Hasura
-        url_year(), url_threshold()
+        url_year(), threshold()
       )
     } else {
       message("Parameters are not set. Download handler not registered.\n")
@@ -272,7 +297,7 @@ server <- function(input, output, session) {
         model_id = url_model_id(),
         site_id = url_site_ids()[1],
         year = url_year(),
-        threshold = url_threshold()
+        threshold = threshold()
       )
     }, error = function(e) {
       message(paste("Error in load_and_process_data:", e$message))
@@ -287,7 +312,7 @@ server <- function(input, output, session) {
       twilight_toggle <- !is.null(input$twilight_toggle) && input$twilight_toggle %% 2 == 1
 
       render_heatmap(
-        input, output, session, heatmap_data, url_year, url_threshold,
+        input, output, session, heatmap_data, url_year, threshold,
         sun_toggle, twilight_toggle, site_info()$latitude, site_info()$longitude
       )
     }
@@ -295,13 +320,12 @@ server <- function(input, output, session) {
 
   # Acoustic activity text
   output$acoustic_activity_text <- renderUI({
-    threshold <- url_threshold()
     count_above_threshold <- get_count_above_threshold(
       species_id = url_species_id(),
       model_id = url_model_id(),
       site_id = url_site_ids()[1],
       year = url_year(),
-      threshold = threshold
+      threshold = threshold()
     )
 
     tags$span(paste("No. of minutes with acoustic activity:", count_above_threshold))
