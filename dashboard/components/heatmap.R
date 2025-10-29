@@ -289,7 +289,102 @@ get_dawn_dusk_lines <- function(heatmap_long, lat, lon, twilight_type) {
   )
 }
 
-# Function to handle heatmap rendering
+# Function to create a single heatmap plot (returns plotly object)
+render_heatmap_plot <- function(
+  heatmap_result, year, threshold_val, sun_toggle, twilight_toggle,
+  lat, lon, site_name = NULL, colormap = "rdbu", twilight_type = "civil"
+) {
+  if (is.null(heatmap_result)) {
+    return(plotly::plot_ly() %>%
+      plotly::layout(
+        title = "Loading data...",
+        xaxis = list(visible = FALSE),
+        yaxis = list(visible = FALSE)
+      ))
+  }
+
+  # Prepare data
+  heatmap_long <- prepare_heatmap_data(heatmap_result, threshold_val, year)
+
+  # tooltip text
+  heatmap_long$text <- paste0(
+    "Date: ", heatmap_long$Date, "\n",
+    "Time: ", heatmap_long$Time, "\n",
+    "Value: ", ifelse(heatmap_long$Value == -1, 0, heatmap_long$Value)
+  )
+
+  # Create base plot
+  p <- ggplot(heatmap_long, aes(x = Date, y = Time, fill = Value, text = text)) +
+    geom_raster(interpolate = FALSE)
+
+  # Add sunrise/sunset lines if sun_toggle is ON
+  if (sun_toggle) {
+    sun_df <- get_sunrise_sunset_lines(heatmap_long, lat, lon)
+    p <- p +
+      geom_line(
+        data = sun_df,
+        aes(x = Date, y = Time, group = Type),
+        color = "#FDB813",
+        size = 0.5,
+        inherit.aes = FALSE,
+        show.legend = FALSE
+      )
+  }
+
+  # Add dawn/dusk lines if twilight_toggle is ON
+  if (twilight_toggle) {
+    if (is.null(twilight_type) || twilight_type == "") twilight_type <- "civil"
+    twilight_df <- get_dawn_dusk_lines(heatmap_long, lat, lon, twilight_type)
+    p <- p +
+      geom_line(
+        data = twilight_df,
+        aes(x = Date, y = Time, group = Type),
+        color = "#4FC3F7", # light blue
+        size = 0.5,
+        inherit.aes = FALSE,
+        show.legend = FALSE
+      )
+  }
+
+  # Add color scale
+  p <- add_color_scale(p, colormap, threshold_val)
+
+  # Add scales
+  scales <- create_axis_scales(year)
+  p <- p + scales$x_scale + scales$y_scale
+
+  # Add labels and theme
+  p <- p +
+    labs(
+      x = "Date",
+      y = "CET (Winter Time)"
+    ) +
+    create_plot_theme()
+
+  plt <- plotly::ggplotly(p, tooltip = "text")
+
+  # Tweak the plotly object for better appearance
+  for (i in seq_along(plt$x$data)) {
+    # Make lines transparent to hover
+    if (plt$x$data[[i]]$type == "scatter" && plt$x$data[[i]]$mode == "lines") {
+      plt$x$data[[i]]$hoverinfo <- "skip"
+    }
+  }
+
+  plotly::config(
+    plt,
+    modeBarButtonsToRemove = c(
+      "toImage", "autoScale2d",
+      "select2d", "lasso2d",
+      "hoverClosestCartesian", "hoverCompareCartesian",
+      "toggleSpikelines"
+    ),
+    modeBarButtonsToAdd = c("zoom2d", "zoomIn2d", "zoomOut2d", "pan2d", "resetScale2d"),
+    displaylogo = FALSE
+  )
+}
+
+# Function to handle heatmap rendering (wrapper for backward compatibility)
 render_heatmap <- function(
   input, output, session, heatmap_data, selected_year, threshold_reactive,
   sun_toggle, twilight_toggle, lat, lon
@@ -297,12 +392,6 @@ render_heatmap <- function(
   output$heatmap <- plotly::renderPlotly({
     # Force evaluation of heatmap_data
     heatmap_result <- heatmap_data()  # This evaluates the reactive
-    if (is.null(heatmap_result)) {
-      # Show a loading message or empty plot
-      plot.new()
-      text(0.5, 0.5, "Loading data...", cex = 1.5, col = "gray")
-      return()
-    }
 
     colormap <- input$colormap
     if (is.null(colormap) || colormap == "") colormap <- "rdbu"
@@ -319,84 +408,17 @@ render_heatmap <- function(
       as.numeric(format(Sys.Date(), "%Y"))  # Default to current year
     })
 
-    # Prepare data
-    heatmap_long <- prepare_heatmap_data(heatmap_result, threshold_val, year)
-    # tooltip text
-    heatmap_long$text <- paste0(
-      "Date: ", heatmap_long$Date, "\n",
-      "Time: ", heatmap_long$Time, "\n",
-      "Value: ", ifelse(heatmap_long$Value == -1, 0, heatmap_long$Value)
-    )
-
-    # Create base plot
-    p <- ggplot(heatmap_long, aes(x = Date, y = Time, fill = Value, text = text)) +
-      geom_raster(interpolate = FALSE)
-
-    # Add sunrise/sunset lines if sun_toggle is ON
-    if (sun_toggle) {
-      sun_df <- get_sunrise_sunset_lines(heatmap_long, lat, lon)
-      p <- p +
-        geom_line(
-          data = sun_df,
-          aes(x = Date, y = Time, group = Type),
-          color = "#FDB813",
-          size = 0.5,
-          inherit.aes = FALSE,
-          show.legend = FALSE
-        )
-    }
-
-    # Add dawn/dusk lines if twilight_toggle is ON
     twilight_type <- input$twilight_type
-    message(paste("Twilight type:", twilight_type))
-    if (twilight_toggle) {
-      if (is.null(twilight_type) || twilight_type == "") twilight_type <- "civil"
-      twilight_df <- get_dawn_dusk_lines(heatmap_long, lat, lon, twilight_type)
-      p <- p +
-        geom_line(
-          data = twilight_df,
-          aes(x = Date, y = Time, group = Type),
-          color = "#4FC3F7", # light blue
-          size = 0.5,
-          inherit.aes = FALSE,
-          show.legend = FALSE
-        )
-    }
+    if (is.null(twilight_type) || twilight_type == "") twilight_type <- "civil"
 
-    # Add color scale
-    p <- add_color_scale(p, colormap, threshold_val)
-
-    # Add scales
-    scales <- create_axis_scales(year)
-    p <- p + scales$x_scale + scales$y_scale
-
-    # Add labels and theme
-    p <- p +
-      labs(
-        x = "Date",
-        y = "CET (Winter Time)"
-      ) +
-      create_plot_theme()
-
-    plt <- plotly::ggplotly(p, tooltip = "text")
-
-    # Tweak the plotly object for better appearance
-    for (i in seq_along(plt$x$data)) {
-      # Make lines transparent to hover
-      if (plt$x$data[[i]]$type == "scatter" && plt$x$data[[i]]$mode == "lines") {
-        plt$x$data[[i]]$hoverinfo <- "skip"
-      }
-    }
-    plotly::config(
-      plt,
-      modeBarButtonsToRemove = c(
-        "toImage", "autoScale2d",
-        "select2d", "lasso2d",
-        "hoverClosestCartesian", "hoverCompareCartesian",
-        "toggleSpikelines"
-      ),
-      modeBarButtonsToAdd = c("zoom2d", "zoomIn2d", "zoomOut2d", "pan2d", "resetScale2d"),
-      displaylogo = FALSE
+    # Call the new render function
+    render_heatmap_plot(
+      heatmap_result, year, threshold_val,
+      sun_toggle, twilight_toggle,
+      lat, lon,
+      site_name = NULL,
+      colormap = colormap,
+      twilight_type = twilight_type
     )
   })
 }

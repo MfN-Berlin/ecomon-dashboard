@@ -31,6 +31,7 @@ library(data.table)
 library(suncalc)
 library(plotly)
 
+
 # Source external files
 source("ui.R")
 source("utils/ephem.R")
@@ -283,65 +284,268 @@ server <- function(input, output, session) {
     }
   })
 
-  # Load and process data when app starts
-  heatmap_data <- reactive({
+  # Load and process data for all sites when app starts
+  heatmap_data_list <- reactive({
     if (is.null(url_species_id()) || is.null(url_model_id()) ||
-          is.null(url_site_ids()) || is.null(url_year()) ||
-          is.null(site_info())) {
+          is.null(url_site_ids()) || is.null(url_year())) {
       return(NULL)
     }
 
-    tryCatch({
-      load_and_process_data(
-        species_id = url_species_id(),
-        model_id = url_model_id(),
-        site_id = url_site_ids()[1],
-        year = url_year(),
-        threshold = threshold()
-      )
-    }, error = function(e) {
-      message(paste("Error in load_and_process_data:", e$message))
-      return(NULL)
+    # Load data for each site
+    site_data_list <- lapply(url_site_ids(), function(site_id) {
+      tryCatch({
+        site_info <- get_site_info(site_id)
+        data <- load_and_process_data(
+          species_id = url_species_id(),
+          model_id = url_model_id(),
+          site_id = site_id,
+          year = url_year(),
+          threshold = threshold()
+        )
+        list(
+          site_id = site_id,
+          site_info = site_info,
+          data = data
+        )
+      }, error = function(e) {
+        message(paste("Error in load_and_process_data:", e$message))
+        return(NULL)
+      })
     })
+    # Remove NULL entries
+    site_data_list[!sapply(site_data_list, is.null)]
   })
 
-  # Heatmap rendering
+  # Render dynamic UI for multiple heatmaps
+  output$site_panels <- renderUI({
+    site_data_list <- heatmap_data_list()
+
+    if (is.null(site_data_list) || length(site_data_list) == 0) {
+      return(tags$div(
+        class = "main-panel",
+        tags$div(
+          class = "card shadow rounded p-3 mb-4",
+          tags$p("No data available")
+        )
+      ))
+    }
+
+    # Create a main panel for each site
+    tagList(
+      lapply(site_data_list, function(site_data) {
+        site_id <- site_data$site_id
+
+        tags$div(
+          class = "main-panel",
+          tags$div(
+            class = "card shadow rounded p-3 mb-4",
+            # Canvas controls for this site
+            fluidRow(
+              id = paste0("canvas_controls_", site_id),
+              class = "g-2 canvas-controls-row",
+              column(3, textInput(
+                paste0("canvas_classifier_", site_id),
+                "Classifier",
+                value = model_info()$name %||% "",
+                width = "100%",
+                placeholder = "Classifier"
+              ) %>% tagAppendAttributes(disabled = "disabled")),
+              column(1, numericInput(
+                paste0("canvas_threshold_", site_id),
+                "Threshold",
+                value = threshold(),
+                min = 0,
+                max = 1,
+                step = 0.001,
+                width = "100%"
+              ) %>% tagAppendAttributes(disabled = "disabled")),
+              column(4, textInput(
+                paste0("canvas_site_", site_id),
+                "Site",
+                value = site_data$site_info$name,
+                width = "100%",
+                placeholder = "Site"
+              ) %>% tagAppendAttributes(disabled = "disabled")),
+              column(1, textInput(
+                paste0("canvas_year_", site_id),
+                "Year",
+                value = url_year(),
+                width = "100%",
+                placeholder = "Year"
+              ) %>% tagAppendAttributes(disabled = "disabled")),
+              column(3, textInput(
+                paste0("canvas_species_", site_id),
+                "Species",
+                value = species_info()$name %||% "",
+                width = "100%",
+                placeholder = "Species"
+              ) %>% tagAppendAttributes(disabled = "disabled"))
+            ),
+            # Tabs for this site
+            tabsetPanel(
+              # Heatmap tab
+              tabPanel(
+                title = "Heatmap",
+                tags$div(
+                  class = "tab-pane-content",
+                  tags$div(
+                    class = "plot-container",
+                    # plot moon
+                    tags$div(
+                      class = "moon-timeline-container",
+                      plotOutput(paste0("moon_timeline_", site_id),
+                                height = "30px", width = "810px")
+                    ),
+                    # plot heatmap
+                    tags$div(
+                      class = "heatmap-plot",
+                      plotlyOutput(
+                        paste0("heatmap_", site_id),
+                        width = "900px",
+                        height = "400px"
+                      )
+                    )
+                  )
+                )
+              ),
+              # Histogram tab
+              tabPanel(
+                title = "Histogram",
+                tags$div(
+                  class = "tab-pane-content",
+                  tags$div(
+                    class = "plot-container",
+                    tags$h3("To do"),
+                    tags$div(
+                      class = "hist-plot",
+                      plotOutput(paste0("hist_", site_id), height = "410px")
+                    )
+                  )
+                )
+              ),
+              # Acoustic activity tab
+              tabPanel(
+                title = "Acoustic activity",
+                tags$div(
+                  class = "tab-pane-content",
+                  tags$div(
+                    class = "plot-container",
+                    tags$h3("To do"),
+                    tags$div(
+                      class = "events-plot",
+                      plotOutput(paste0("events_", site_id), height = "410px")
+                    )
+                  )
+                )
+              )
+            ),
+            # Activity controls for this site
+            create_activity_controls(site_id)
+          )
+        )
+      })
+    )
+  })
+
+  # Render heatmaps for all sites
   observe({
-    if (!is.null(site_info())) {
+    site_data_list <- heatmap_data_list()
+
+    if (!is.null(site_data_list) && length(site_data_list) > 0) {
       sun_toggle <- is.null(input$sun_toggle) || input$sun_toggle %% 2 == 1
       twilight_toggle <- !is.null(input$twilight_toggle) && input$twilight_toggle %% 2 == 1
 
-      render_heatmap(
-        input, output, session, heatmap_data, url_year, threshold,
-        sun_toggle, twilight_toggle, site_info()$latitude, site_info()$longitude
-      )
+      colormap <- input$colormap
+      if (is.null(colormap) || colormap == "") colormap <- "rdbu"
+
+      twilight_type <- input$twilight_type
+      if (is.null(twilight_type) || twilight_type == "") twilight_type <- "civil"
+
+      # Render a heatmap for each site
+      lapply(seq_along(site_data_list), function(i) {
+        local({
+          site_idx <- i
+          site_data <- site_data_list[[site_idx]]
+          site_id <- site_data$site_id
+
+          heatmap_output_id <- paste0("heatmap_", site_data$site_id)
+          moon_output_id <- paste0("moon_timeline_", site_data$site_id)
+
+          # Render heatmap
+          output[[heatmap_output_id]] <- renderPlotly({
+            render_heatmap_plot(
+              site_data$data,
+              url_year(),
+              threshold(),
+              sun_toggle,
+              twilight_toggle,
+              site_data$site_info$latitude,
+              site_data$site_info$longitude,
+              site_data$site_info$name,
+              colormap,
+              twilight_type
+            )
+          })
+
+          # Render moon timeline
+#          output[[moon_output_id]] <- renderPlot({
+#            render_moon_timeline(url_year())
+#          })
+
+          # Render moon timeline directly
+          output[[moon_output_id]] <- renderPlot({
+            year <- url_year()
+            moon_toggle <- !is.null(input$moonphase_toggle) && input$moonphase_toggle %% 2 == 1
+
+            start_date <- as.Date(sprintf("%d-01-01", year))
+            end_date <- as.Date(sprintf("%d-12-31", year))
+
+            if (moon_toggle) {
+              plot_moon_timeline(start_date, end_date)
+            } else {
+              par(mar = c(0, 0, 0, 0))
+              plot(NA, xlim = c(0, 1), ylim = c(0, 1), axes = FALSE, xlab = "", ylab = "")
+            }
+          }, height = 30, width = 736)
+
+          # Render acoustic activity text
+          output[[paste0("acoustic_activity_text_", site_id)]] <- renderUI({
+            count_above_threshold <- get_count_above_threshold(
+              species_id = url_species_id(),
+              model_id = url_model_id(),
+              site_id = site_id,
+              year = url_year(),
+              threshold = threshold()
+            )
+
+            tags$span(paste("No. of minutes with acoustic activity:", count_above_threshold))
+          })
+
+          # Register download handler for this site
+          output[[paste0("download_", site_id)]] <- downloadHandler(
+            filename = function() {
+              filename <- sprintf("%s_%s_%s",
+                                site_data$site_info$name,
+                                url_year(),
+                                species_info()$name)
+              sanitized_filename <- gsub("[^a-zA-Z0-9_-]", "_", filename)
+              paste0(sanitized_filename, ".csv")
+            },
+            content = function(file) {
+              download_data <- get_download_data(
+                species_id = url_species_id(),
+                model_id = url_model_id(),
+                site_id = site_id,
+                year = url_year(),
+                threshold = threshold()
+              )
+              write.csv(download_data, file, row.names = TRUE)
+            }
+          )
+        })
+      })
     }
   })
-
-  # Acoustic activity text
-  output$acoustic_activity_text <- renderUI({
-    count_above_threshold <- get_count_above_threshold(
-      species_id = url_species_id(),
-      model_id = url_model_id(),
-      site_id = url_site_ids()[1],
-      year = url_year(),
-      threshold = threshold()
-    )
-
-    tags$span(paste("No. of minutes with acoustic activity:", count_above_threshold))
-  })
-
-  # Moon timeline plot
-  observe({
-    if (is.null(input$moonphase_toggle)) {
-      updateActionButton(session, "moonphase_toggle", value = 0)
-    }
-  })
-  observe({
-    moon_toggle <- is.null(input$moonphase_toggle) || input$moonphase_toggle %% 2 == 1
-    render_moon_timeline(input, output, session, url_year, moon_toggle)
-  })
-  render_moon_timeline(input, output, session, url_year, TRUE)
 }
 
 # Run the Shiny app

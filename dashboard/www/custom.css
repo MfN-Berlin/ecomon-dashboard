@@ -155,11 +155,12 @@ height: 30px;
 }
 
 #species_select + .selectize-control .selectize-input .item,
-#canvas_species {
+#canvas_species,
+.canvas-controls-row [id^="canvas_species"] {
   font-style: italic;
 }
 
-#canvas_controls, #canvas_controls_activity_row {
+#canvas_controls, .canvas-controls-row, #canvas_controls_activity_row {
   font-size: small;
   margin-bottom: 2em;
   margin-left: 0.5em;
@@ -172,7 +173,10 @@ height: 30px;
 
 #canvas_controls input,
 #canvas_controls .form-control,
-#canvas_controls .shiny-input-container {
+#canvas_controls .shiny-input-container,
+.canvas-controls-row input,
+.canvas-controls-row .form-control,
+.canvas-controls-row .shiny-input-container {
   min-height: 1.7em !important;
   height: 1.7em !important;
   padding-top: 0.1em !important;
@@ -181,7 +185,8 @@ height: 30px;
   font-size: 0.95em !important;
 }
 
-#canvas_controls .shiny-input-container {
+#canvas_controls .shiny-input-container,
+.canvas-controls-row .shiny-input-container {
   border-bottom: 1px solid black;
 }
 
@@ -264,11 +269,14 @@ position: relative;
   width: 100% !important;
 }
 /* Ensure the inner plot graphics are properly aligned */
-#moon_timeline img  {
+#moon_timeline img,
+[id^="moon_timeline_"] img {
   object-fit: contain;
   margin-left: 64px;  /* Align with heatmap plot area */
 }
-#heatmap img {
+
+#heatmap img,
+[id^="heatmap_"] img {
   object-fit: contain;
 }
 
@@ -337,7 +345,10 @@ position: relative;
 
 
 /* Style for the Create Voucher and Download Data buttons */
-#download_data, #create_voucher {
+#download_data, #create_voucher,
+ [id^="download_"],
+[id^="voucher_"] {
+
   font-size: 0.8em;
   font-weight: 500;
   padding: 0.3em 0.7em;
@@ -353,17 +364,24 @@ position: relative;
   transition: background-color 0.2s, box-shadow 0.2s;
 }
 
-#download_data:hover, #create_voucher:hover {
+#download_data:hover, #create_voucher:hover,
+[id^="download_"]:hover,
+[id^="voucher_"]:hover {
   background-color: #e9ecef;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-#download_data:active, #create_voucher:active {
+#download_data:active, #create_voucher:active,
+[id^="download_"]:active,
+[id^="voucher_"]:active {
+
   background-color: #dee2e6;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-#download_data .bi, #create_voucher .bi {
+#download_data .bi, #create_voucher .bi,
+[id^="download_"] .bi,
+[id^="voucher_"] .bi {
   font-size: 1.2em; /* Adjust icon size */
   color: #495057;
 }
@@ -380,12 +398,15 @@ position: relative;
 
 /* Hide spinners/scrollers for canvas_threshold input only */
 #canvas_threshold::-webkit-outer-spin-button,
-#canvas_threshold::-webkit-inner-spin-button {
+#canvas_threshold::-webkit-inner-spin-button,
+.canvas-controls-row [id^="canvas_threshold"]::-webkit-outer-spin-button,
+.canvas-controls-row [id^="canvas_threshold"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-#canvas_threshold[type=number] {
+#canvas_threshold[type=number],
+.canvas-controls-row [id^="canvas_threshold"][type=number] {
   -moz-appearance: textfield;
   appearance: textfield;
 }

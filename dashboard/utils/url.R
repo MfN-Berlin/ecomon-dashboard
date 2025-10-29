@@ -55,10 +55,14 @@ parse_url_parameters <- function(
       })
     }
 
-    # Site parameters
+    # Site parameters - handle comma-separated list or single ID
     if (!is.null(query$siteId)) {
-      site_id <- as.numeric(query$siteId)
-      url_site_ids(c(site_id))
+      # Split by comma and convert to numeric vector
+      site_ids <- as.numeric(strsplit(query$siteId, ",")[[1]])
+      # Remove any NA values that might result from invalid conversions
+      site_ids <- site_ids[!is.na(site_ids)]
+      # Set the reactive value with the list of site IDs
+      url_site_ids(site_ids)
     }
 
     # Year

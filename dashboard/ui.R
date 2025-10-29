@@ -43,73 +43,7 @@ ui <- fluidPage(
   div(
     class = "container-fluid",
     page_controls,
-    div(
-      class = "main-panel",
-      tags$div(
-        class = "card shadow rounded p-3 mb-4", # Card styling
-        canvas_controls,
-        tabsetPanel(
-          # First tab: Heatmap
-          tabPanel(
-            title = "Heatmap",
-            tags$div(
-              class = "tab-pane-content",
-              # Wrapper div for both plots to maintain alignment
-              tags$div(
-                class = "plot-container",
-                # plot moon
-                tags$div(
-                  class = "moon-timeline-container",
-                  plotOutput("moon_timeline", height = "30px", width = "810px")
-                ),
-                # plot heatmap
-                tags$div(
-                  class = "heatmap-plot",
-                  plotlyOutput(
-                    "heatmap",
-                    width = "900px",
-                    height = "400px"
-                  )
-                ),
-              )
-            )
-          ),
-          # Second tab: Histogram
-          tabPanel(
-            title = "Histogram",
-            tags$div(
-              class = "tab-pane-content",
-              tags$div(
-                class = "plot-container",
-                tags$h3("To do"),
-                # plot events
-                tags$div(
-                  class = "hist-plot",
-                  plotOutput("hist", height = "410px")
-                )
-              )
-            )
-          ),
-          # Third tab: Acoustic activity
-          tabPanel(
-            title = "Acoustic activity",
-            tags$div(
-              class = "tab-pane-content",
-              tags$div(
-                class = "plot-container",
-                tags$h3("To do"),
-                # plot events
-                tags$div(
-                  class = "events-plot",
-                  plotOutput("events", height = "410px")
-                )
-              )
-            )
-          )
-        ),
-        # No. of minutes, Download, Voucher buttons
-        activity_controls
-      )
-    )
+    # Dynamic main panels - one for each site
+    uiOutput("site_panels")
   )
 )
