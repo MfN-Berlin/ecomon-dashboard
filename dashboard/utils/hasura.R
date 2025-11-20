@@ -12,7 +12,7 @@ hasura_headers <- c(
 # CREATE INDEX IF NOT EXISTS idx_records_site_datetime ON records(site_id, record_datetime);
 #
 # Model inference results table - INDEX PRIORITY ANALYSIS:
-# 
+#
 # CRITICAL (Primary query filter pattern):
 # CREATE INDEX IF NOT EXISTS idx_mir_compound ON model_inference_results(model_id, label_id, confidence, record_id);
 # - Covers ALL query patterns: model_id + label_id + confidence filtering with record_id access
@@ -21,7 +21,7 @@ hasura_headers <- c(
 # - Single index covers both aggregate queries (count) and detail queries
 #
 # SECONDARY (For record_id lookups):
-# CREATE INDEX IF NOT EXISTS idx_mir_record_id ON model_inference_results(record_id);  
+# CREATE INDEX IF NOT EXISTS idx_mir_record_id ON model_inference_results(record_id);
 # - Needed when querying model_inference_results from records side (nested queries)
 # - Supports foreign key joins efficiently
 # - Smaller index for fast record-specific lookups
@@ -32,7 +32,7 @@ hasura_headers <- c(
 #
 # QUERY PATTERN ANALYSIS:
 # 1. Threshold filtering: WHERE model_id = ? AND label_id = ? AND confidence >= ? → idx_mir_compound (optimal)
-# 2. Record joins: WHERE record_id = ? → idx_mir_record_id (optimal) 
+# 2. Record joins: WHERE record_id = ? → idx_mir_record_id (optimal)
 # 3. Combined queries: Both patterns above → Both indexes complement each other
 # 4. Aggregate distinct: Uses compound index for filtering + record_id for distinct operation
 
@@ -196,7 +196,7 @@ build_queries <- function(species_id, model_id, site_id, year, threshold) {
   # OPTIMIZED: Remove nested record filter - use direct join for better performance
   inference_query <- sprintf('
     query GetInferenceResults {
-      model_inference_results(
+      model_inference_results_max_confidence(
         where: {
           model_id: { _eq: %d }
           label_id: { _eq: %d }
@@ -222,71 +222,6 @@ build_queries <- function(species_id, model_id, site_id, year, threshold) {
   )
 }
 
-# OPTIMIZED: Combined query that joins data at database level instead of application level
-build_optimized_combined_query <- function(species_id, model_id, site_id, year, threshold) {
-  dates <- create_date_range(year)
-
-  # Single query that gets all records with their confidence values in one go
-  combined_query <- sprintf('
-    query GetRecordsWithInference {
-      records(
-        where: {
-          site_id: { _eq: %d }
-          record_datetime: {
-            _gte: "%s"
-            _lt: "%s"
-          }
-        },
-        order_by: { record_datetime: asc }
-      ) {
-        id
-        record_datetime
-        model_inference_results(
-          where: {
-            model_id: { _eq: %d }
-            label_id: { _eq: %d }
-            confidence: { _gte: %f }
-          }
-          order_by: { confidence: desc }
-        ) {
-          confidence
-        }
-      }
-    }
-  ', site_id, dates$start, dates$end, model_id, species_id, threshold)
-
-  combined_query
-}
-
-# ALTERNATIVE: Parallel execution of separate queries
-build_queries_parallel <- function(species_id, model_id, site_id, year, threshold) {
-  queries <- build_queries(species_id, model_id, site_id, year, threshold)
-
-  # Return optimized queries that can be executed in parallel
-  list(
-    all_records = queries$all_records,
-    inference = queries$inference,
-    # Additional metadata query for debugging/monitoring
-    count_query = sprintf('
-      query GetRecordCount {
-        records_aggregate(
-          where: {
-            site_id: { _eq: %d }
-            record_datetime: {
-              _gte: "%s"
-              _lt: "%s"
-            }
-          }
-        ) {
-          aggregate {
-            count
-          }
-        }
-      }
-    ', site_id, create_date_range(year)$start, create_date_range(year)$end)
-  )
-}
-
 # Get species information from Hasura
 get_species_info <- function(species_id) {
   cat("Getting species info for species_id:", species_id, "\n")
@@ -307,63 +242,4 @@ get_species_info <- function(species_id) {
     id = species_info$id,
     name = species_info$name
   ))
-}
-
-# PERFORMANCE OPTIMIZED: Execute queries with better error handling and timeout
-execute_optimized_query <- function(query, query_name = "GraphQL", timeout_seconds = 30) {
-  cat(query_name, "query (optimized):\n", query, "\n\n")
-
-  # Use longer timeout for complex queries
-  response <- POST(
-    url = hasura_url,
-    add_headers(.headers = hasura_headers),
-    body = list(query = query),
-    encode = "json",
-    timeout = timeout_seconds
-  )
-
-  # Validate HTTP response
-  if (http_status(response)$category != "Success") {
-    stop("Failed to execute ", query_name, " query: ",
-         content(response, "text", encoding = "UTF-8"))
-  }
-
-  # Parse and validate GraphQL response
-  data <- content(response, "parsed", simplifyVector = TRUE)
-
-  if (!is.null(data$errors)) {
-    stop(query_name, " query failed: ", paste(data$errors, collapse = ", "))
-  }
-
-  return(data$data)
-}
-
-# OPTIMIZED: Execute combined query for better performance
-execute_combined_query <- function(species_id, model_id, site_id, year, threshold) {
-  query <- build_optimized_combined_query(species_id, model_id, site_id, year, threshold)
-
-  data <- execute_optimized_query(query, "Combined Records+Inference", timeout_seconds = 60)
-
-  # Process the nested results
-  records_with_inference <- data$records
-
-  # Extract records and inference data from combined result
-  all_records <- lapply(records_with_inference, function(record) {
-    list(id = record$id, record_datetime = record$record_datetime)
-  })
-
-  inference_results <- list()
-  for (record in records_with_inference) {
-    if (length(record$model_inference_results) > 0) {
-      inference_results <- append(inference_results, list(list(
-        record_id = record$id,
-        confidence = record$model_inference_results[[1]]$confidence
-      )))
-    }
-  }
-
-  list(
-    all_records = all_records,
-    inference_results = inference_results
-  )
 }
