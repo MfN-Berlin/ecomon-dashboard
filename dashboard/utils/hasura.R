@@ -145,7 +145,7 @@ get_count_above_threshold <- function(species_id, model_id, site_id, year, thres
 
   query <- sprintf('
     query CountUniqueRecordDatetimes {
-      model_inference_results_aggregate(
+      model_inference_results_max_confidence(
         where: {
           model_id: { _eq: %d }
           label_id: { _eq: %d }
@@ -158,17 +158,23 @@ get_count_above_threshold <- function(species_id, model_id, site_id, year, thres
             }
           }
         }
-        distinct_on: record_id
       ) {
-        aggregate {
-          count
-        }
+        record_id
       }
     }
   ', model_id, species_id, threshold, site_id, dates$start, dates$end)
 
   data <- execute_graphql_query(query, "Count")
-  return(data$model_inference_results_aggregate$aggregate$count)
+  # Ensure the correct count is calculated
+  count_result <- if (is.data.frame(data$model_inference_results_max_confidence)) {
+    nrow(data$model_inference_results_max_confidence)
+  } else {
+    length(data$model_inference_results_max_confidence)
+  }
+
+  # Log the computed count
+  message("Unique record_datetime count above threshold: ", count_result)
+  return(count_result)
 }
 
 # Build OPTIMIZED GraphQL queries for data loading

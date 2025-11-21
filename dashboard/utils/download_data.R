@@ -36,7 +36,7 @@ build_download_query <- function(species_id, model_id, site_id, year, threshold 
 
   download_query <- sprintf('
   query GetDownloadData {
-    model_inference_results(
+    model_inference_results_max_confidence(
       where: {
         model_id: { _eq: %d }
         label_id: { _eq: %d }
