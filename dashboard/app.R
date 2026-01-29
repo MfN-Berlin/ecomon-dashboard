@@ -291,6 +291,8 @@ server <- function(input, output, session) {
       return(NULL)
     }
 
+    message("Executing heatmap_data_list")
+
     # Load data for each site
     site_data_list <- lapply(url_site_ids(), function(site_id) {
       tryCatch({
