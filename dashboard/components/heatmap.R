@@ -373,13 +373,22 @@ render_heatmap_plot <- function(
 
   plotly::config(
     plt,
+    toImageButtonOptions = list(
+      format = "svg",  # Default format for download
+      filename = paste0("heatmap_", site_name %||% "site"),
+      height = 400,
+      width = 900,
+      scale = 2  # Higher scale for better quality
+    ),
     modeBarButtonsToRemove = c(
-      "toImage", "autoScale2d",
+      "autoScale2d",
       "select2d", "lasso2d",
       "hoverClosestCartesian", "hoverCompareCartesian",
       "toggleSpikelines"
     ),
-    modeBarButtonsToAdd = c("zoom2d", "zoomIn2d", "zoomOut2d", "pan2d", "resetScale2d"),
+    # note that the toImage button is hidden using CSS, and triggered using a separate actionButton
+    # defined in activity_controls.R
+    modeBarButtonsToAdd = c("toImage", "zoom2d", "zoomIn2d", "zoomOut2d", "pan2d", "resetScale2d"),
     displaylogo = FALSE
   )
 }

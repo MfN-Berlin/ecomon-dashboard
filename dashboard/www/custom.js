@@ -71,3 +71,29 @@ function disableCanvasControls() {
 $(document).on('shiny:connected shiny:inputchanged shiny:value shiny:bound shiny:updateinput', function() {
   disableCanvasControls();
 });
+
+// Download SVG image of the heatmap plot for any site
+$(document).on('click', '[id^="download_image_"]', function() {
+  // Extract SITEID from the button's ID
+  var btnId = $(this).attr('id');
+  var siteId = btnId.replace('download_image_', '');
+
+  // Find the plotly modebar for the corresponding heatmap plot
+  var plotDiv = document.getElementById('heatmap_' + siteId);
+  if (plotDiv) {
+    var modebar = plotDiv.querySelector('.modebar');
+    if (modebar) {
+      // Find the toImage button in the modebar
+      var toImageBtn = modebar.querySelector('.modebar-btn[data-title*="Download plot"]');
+      if (!toImageBtn) {
+        // Fallback: try to find by aria-label
+        toImageBtn = modebar.querySelector('.modebar-btn[aria-label*="Download plot"]');
+      }
+      if (toImageBtn) {
+        toImageBtn.click();
+      } else {
+        alert("Plotly download button not found.");
+      }
+    }
+  }
+});

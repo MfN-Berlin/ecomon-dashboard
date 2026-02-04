@@ -13,33 +13,13 @@
 # directly from the dashboard.
 # -----------------------------------------------------------------------------
 
-# Static activity controls (for backward compatibility if needed)
-#activity_controls <- tags$div(
-#  class = "mt-4", # Add margin-top for spacing
-#  id = "canvas_controls_activity_row",
-#  fluidRow(
-#    column(10, div(
-#      uiOutput("acoustic_activity_text")  # Placeholder for dynamic text
-#    )),
-#    column(2, div(
-#      class = "button-container d-flex justify-content-end",
-#      downloadButton(
-#        outputId = "download_data",  # This must match the output ID in the server logic
-#        label = NULL,
-#        icon = icon("card-heading", class = "bi bi-card-heading"),
-#        title = "Download data (CSV)",
-#        class = "btn btn-primary me-2"
-#      )
-#    ))
-#  )
-#)
-
 # Function to create activity controls for a specific site
 create_activity_controls <- function(site_id) {
   tags$div(
     class = "d-flex justify-content-between align-items-center mt-3",
     uiOutput(paste0("acoustic_activity_text_", site_id)),
     tags$div(
+      class = "d-flex",
       downloadButton(
         paste0("download_", site_id),
         label = NULL,
@@ -47,11 +27,13 @@ create_activity_controls <- function(site_id) {
         title = "Download data (CSV)",
         class = "btn btn-primary me-2"
       ),
-#      actionButton(
-#        paste0("voucher_", site_id),
-#        "Voucher",
-#        class = "btn btn-secondary btn-sm ml-2"
-#      )
+      actionButton(
+        paste0("download_image_", site_id),
+        label = NULL,
+        icon = icon("image", class = "bi bi-image"),
+        title = "Download publication-quality image",
+        class = "btn btn-outline-secondary"
+      )
     )
   )
 }

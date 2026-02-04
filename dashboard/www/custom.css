@@ -410,3 +410,8 @@ position: relative;
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* Hide the plotly modebar button with data-title="Download plot" */
+.modebar-btn[data-title="Download plot"] {
+  display: none !important;
+}
