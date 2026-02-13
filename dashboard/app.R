@@ -473,6 +473,13 @@ server <- function(input, output, session) {
           heatmap_output_id <- paste0("heatmap_", site_data$site_id)
           moon_output_id <- paste0("moon_timeline_", site_data$site_id)
 
+          # Log site_data contents
+          message("site_data contents for site ", site_data$site_id, ":\n")
+          # Print each field and its value
+          for(field_name in names(site_data$site_info)) {
+            message(field_name, ": ", site_data$site_info[[field_name]])
+          }
+
           # Render heatmap
           output[[heatmap_output_id]] <- renderPlotly({
             render_heatmap_plot(
@@ -484,6 +491,8 @@ server <- function(input, output, session) {
               site_data$site_info$latitude,
               site_data$site_info$longitude,
               site_data$site_info$name,
+              model_info()$name,
+              species_info()$name,
               colormap,
               twilight_type
             )
