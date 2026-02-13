@@ -42,6 +42,7 @@ source("utils/hasura.R")
 source("utils/download_data.R")
 source("components/canvas_controls.R")
 source("components/moon.R")
+source("utils/file.R")
 
 # -----------------------------------------------------------------------------
 # Function: render_site_list_ui
@@ -112,57 +113,6 @@ render_selected_site_ui <- function(site_df, input) {
       })
     )
   })
-}
-
-# -----------------------------------------------------------------------------
-# Function: register_download_handler
-# Description:
-#   Registers a download handler for exporting data as a CSV file. The handler
-#   dynamically generates the filename and fetches the data for download.
-#
-# Parameters:
-#   - output (Shiny output): Shiny output object.
-#   - species_id, species_name, model_id, site_id, site_name, year, threshold:
-#     Parameters used to fetch and filter the data for download.
-#
-# Returns:
-#   - None. Registers the download handler directly.
-# -----------------------------------------------------------------------------
-register_download_handler <- function(
-    output, species_id, species_name, model_id, site_id, site_name, year, threshold) {
-
-  sanitize = function(filename) {
-    # Sanitize the filename to remove any unwanted characters
-    gsub("[^a-zA-Z0-9_-]", "_", filename)
-  }
-
-  output$download_data <- downloadHandler(
-    filename = function() {
-      message("Generating filename for download...\n")
-      filename <- sprintf("%s_%s_%s", site_name, year, species_name)
-      sanitized_filename <- sanitize(filename)
-      paste0(sanitized_filename, ".csv")
-    },
-    content = function(file) {
-      message("Fetching download data...\n")
-      download_data <- get_download_data(
-        species_id = species_id,
-        model_id = model_id,
-        site_id = site_id,
-        year = year,
-        threshold = threshold
-      )
-
-      if (is.null(download_data)) {
-        message("No data returned by get_download_data.\n")
-        stop("No data available for download.")
-      }
-
-      message("Writing data to CSV file...\n")
-      write.csv(download_data, file, row.names = TRUE)
-      message("Download data written to file:", file, "\n")
-    }
-  )
 }
 
 # -----------------------------------------------------------------------------
@@ -264,23 +214,6 @@ server <- function(input, output, session) {
         message("Error loading site info:", e$message, "\n")
         site_info(NULL)
       })
-    }
-  })
-
-  # Register the download handler (use site name from Hasura)
-  observe({
-    if (!is.null(url_species_id()) && !is.null(url_model_id()) &&
-          !is.null(url_site_ids()) && !is.null(url_year()) &&
-          !is.null(site_info()) &&
-          !is.null(species_info())) {
-      register_download_handler(
-        output, url_species_id(), species_info()$name, url_model_id(),
-        url_site_ids()[1],  # Use the first site from the list
-        site_info()$name,  # Use site name from Hasura
-        url_year(), threshold()
-      )
-    } else {
-      message("Parameters are not set. Download handler not registered.\n")
     }
   })
 
@@ -532,15 +465,18 @@ server <- function(input, output, session) {
             tags$span(paste("No. of minutes with acoustic activity:", count_above_threshold))
           })
 
-          # Register download handler for this site
+          # Register download CSV handler for this site
           output[[paste0("download_", site_id)]] <- downloadHandler(
             filename = function() {
-              filename <- sprintf("%s_%s_%s",
-                                site_data$site_info$name,
-                                url_year(),
-                                species_info()$name)
-              sanitized_filename <- gsub("[^a-zA-Z0-9_-]", "_", filename)
-              paste0(sanitized_filename, ".csv")
+              get_filename(
+                "DT",
+                site_data$site_info$name,
+                model_info()$name,
+                url_year(),
+                species_info()$name,
+                threshold(),
+                "csv"
+              )
             },
             content = function(file) {
               download_data <- get_download_data(
@@ -551,6 +487,41 @@ server <- function(input, output, session) {
                 threshold = threshold()
               )
               write.csv(download_data, file, row.names = TRUE)
+            }
+          )
+          # Register download Excel handler for this site
+          output[[paste0("download_", site_id, "_xlsx")]] <- downloadHandler(
+            filename = function() {
+              get_filename(
+                "DT",
+                site_data$site_info$name,
+                model_info()$name,
+                url_year(),
+                species_info()$name,
+                threshold(),
+                "xlsx"
+              )
+            },
+            content = function(file) {
+              # Load required package
+              require(openxlsx)
+
+              # Get your data (replace with your actual data)
+              data <- get_download_data(
+                species_id = url_species_id(),
+                model_id = url_model_id(),
+                site_id = site_id,
+                year = url_year(),
+                threshold = threshold()
+              )
+
+              # Create workbook and write data
+              wb <- createWorkbook()
+              addWorksheet(wb, "Activity Data")
+              writeData(wb, "Activity Data", data)
+
+              # Save the file
+              saveWorkbook(wb, file, overwrite = TRUE)
             }
           )
         })

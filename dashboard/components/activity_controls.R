@@ -27,6 +27,13 @@ create_activity_controls <- function(site_id) {
         title = "Download data (CSV)",
         class = "btn btn-primary me-2"
       ),
+      downloadButton(
+        paste0("download_", site_id, "_xlsx"),
+        label = NULL,
+        icon = icon("file-earmark-excel", class = "bi bi-file-earmark-excel"),
+        title = "Download data (Excel)",
+        class = "btn btn-success me-2"
+      ),
       actionButton(
         paste0("download_image_", site_id),
         label = NULL,
