@@ -49,27 +49,27 @@ load_and_process_data <- function(species_id, model_id, site_id, year, threshold
     message("- Cells above threshold (", threshold, "): ", count_above)
 
     # Log the specific values above threshold
-    if (count_above > 0) {
-      message("Values above threshold:")
-      # Convert to data.table for easier manipulation
-      dt <- as.data.table(final_data)
-      # Get all cells above threshold
-      above_cells <- dt[, .SD > threshold, .SDcols = -1]
-      # Get the row and column names for above threshold cells
-      row_names <- dt$Time
-      col_names <- names(dt)[-1]
+#    if (count_above > 0) {
+#      message("Values above threshold:")
+#      # Convert to data.table for easier manipulation
+#      dt <- as.data.table(final_data)
+#      # Get all cells above threshold
+#      above_cells <- dt[, .SD > threshold, .SDcols = -1]
+#      # Get the row and column names for above threshold cells
+#      row_names <- dt$Time
+#      col_names <- names(dt)[-1]
 
-      # Log each value above threshold with its position
-      for (col in col_names) {
-        col_values <- dt[[col]]
-        above_in_col <- col_values > threshold
-        if (any(above_in_col)) {
-          for (i in which(above_in_col)) {
-            message("  - ", row_names[i], " on ", col, ": ", col_values[i])
-          }
-        }
-      }
-    }
+#      # Log each value above threshold with its position
+#      for (col in col_names) {
+#        col_values <- dt[[col]]
+#        above_in_col <- col_values > threshold
+#        if (any(above_in_col)) {
+#          for (i in which(above_in_col)) {
+#            message("  - ", row_names[i], " on ", col, ": ", col_values[i])
+#          }
+#        }
+#      }
+#    }
 
     final_data
   }, error = function(e) {
@@ -264,7 +264,7 @@ transform_to_heatmap <- function(events_dt) {
           nrow(heatmap_data), " rows × ", ncol(heatmap_data), " columns")
 
   # Log column names for reference
-  message("Heatmap columns: ", paste(names(heatmap_data), collapse = ", "))
+#  message("Heatmap columns: ", paste(names(heatmap_data), collapse = ", "))
 
   heatmap_data
 }
