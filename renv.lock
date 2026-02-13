@@ -1773,6 +1773,17 @@
       "Maintainer": "Jeroen Ooms <jeroen@berkeley.edu>",
       "Repository": "CRAN"
     },
+    "openxlsx": {
+      "Package": "openxlsx",
+      "Version": "4.2.5.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Rcpp",
+        "zip"
+      ],
+      "Hash": "27d2f68ef8c2874bb045c3bd9e3ea85d"
+    },
     "pillar": {
       "Package": "pillar",
       "Version": "1.8.1",
