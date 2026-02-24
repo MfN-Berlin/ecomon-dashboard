@@ -36,6 +36,7 @@ library(plotly)
 source("ui.R")
 source("utils/ephem.R")
 source("components/heatmap.R")
+source("components/histogram.R")
 source("utils/data_processing.R")
 source("utils/url.R")
 source("utils/hasura.R")
@@ -161,7 +162,7 @@ server <- function(input, output, session) {
   })
 
   # Debounced threshold input (waits 500ms after user stops typing)
-  threshold_debounced <- debounce(reactive(input$threshold), 500)
+  threshold_debounced <- debounce(reactive(input$threshold), 1000)
 
   # Update threshold reactive value when debounced input changes
   observeEvent(threshold_debounced(), {
@@ -217,7 +218,33 @@ server <- function(input, output, session) {
     }
   })
 
-  # Load and process data for all sites when app starts
+  # Get site information only (without loading data - so it doesn't re-render when threshold changes)
+  site_list <- reactive({
+    if (is.null(url_species_id()) || is.null(url_model_id()) ||
+          is.null(url_site_ids()) || is.null(url_year())) {
+      return(NULL)
+    }
+
+    message("Executing site_list")
+
+    # Get site info only (no data processing)
+    site_data_list <- lapply(url_site_ids(), function(site_id) {
+      tryCatch({
+        site_info <- get_site_info(site_id)
+        list(
+          site_id = site_id,
+          site_info = site_info
+        )
+      }, error = function(e) {
+        message(paste("Error in get_site_info:", e$message))
+        return(NULL)
+      })
+    })
+    # Remove NULL entries
+    site_data_list[!sapply(site_data_list, is.null)]
+  })
+
+  # Load and process data for all sites (this will still be used for plots)
   heatmap_data_list <- reactive({
     if (is.null(url_species_id()) || is.null(url_model_id()) ||
           is.null(url_site_ids()) || is.null(url_year())) {
@@ -251,9 +278,13 @@ server <- function(input, output, session) {
     site_data_list[!sapply(site_data_list, is.null)]
   })
 
+  # No tab tracking needed - Shiny will preserve tab state naturally
+  # The key is to NOT use renderUI for parts that contain tabsetPanel
+
+
   # Render dynamic UI for multiple heatmaps
   output$site_panels <- renderUI({
-    site_data_list <- heatmap_data_list()
+    site_data_list <- site_list()  # Use site_list instead of heatmap_data_list
 
     if (is.null(site_data_list) || length(site_data_list) == 0) {
       return(tags$div(
@@ -285,15 +316,7 @@ server <- function(input, output, session) {
                 width = "100%",
                 placeholder = "Classifier"
               ) %>% tagAppendAttributes(disabled = "disabled")),
-              column(1, numericInput(
-                paste0("canvas_threshold_", site_id),
-                "Threshold",
-                value = threshold(),
-                min = 0,
-                max = 1,
-                step = 0.001,
-                width = "100%"
-              ) %>% tagAppendAttributes(disabled = "disabled")),
+              column(1, uiOutput(paste0("canvas_threshold_ui_", site_id))),
               column(4, textInput(
                 paste0("canvas_site_", site_id),
                 "Site",
@@ -318,6 +341,7 @@ server <- function(input, output, session) {
             ),
             # Tabs for this site
             tabsetPanel(
+              id = paste0("tabs_", site_id),
               # Heatmap tab
               tabPanel(
                 title = "Heatmap",
@@ -350,10 +374,9 @@ server <- function(input, output, session) {
                   class = "tab-pane-content",
                   tags$div(
                     class = "plot-container",
-                    tags$h3("To do"),
                     tags$div(
                       class = "hist-plot",
-                      plotOutput(paste0("hist_", site_id), height = "410px")
+                      plotlyOutput(paste0("hist_", site_id), width = "900px", height = "400px")
                     )
                   )
                 )
@@ -380,6 +403,28 @@ server <- function(input, output, session) {
         )
       })
     )
+  })
+
+  # Render threshold inputs separately to avoid re-rendering entire UI
+  observe({
+    site_data_list <- heatmap_data_list()
+
+    if (!is.null(site_data_list) && length(site_data_list) > 0) {
+      lapply(site_data_list, function(site_data) {
+        site_id <- site_data$site_id
+        output[[paste0("canvas_threshold_ui_", site_id)]] <- renderUI({
+          numericInput(
+            paste0("canvas_threshold_", site_id),
+            "Threshold",
+            value = threshold(),
+            min = 0,
+            max = 1,
+            step = 0.001,
+            width = "100%"
+          ) %>% tagAppendAttributes(disabled = "disabled")
+        })
+      })
+    }
   })
 
   # Render heatmaps for all sites
@@ -428,6 +473,19 @@ server <- function(input, output, session) {
               species_info()$name,
               colormap,
               twilight_type
+            )
+          })
+
+          # Render histogram
+          histogram_output_id <- paste0("hist_", site_id)
+          output[[histogram_output_id]] <- renderPlotly({
+            render_histogram_plot(
+              site_data$data,
+              threshold(),
+              url_year(),
+              site_data$site_info$name,
+              model_info()$name,
+              species_info()$name
             )
           })
 

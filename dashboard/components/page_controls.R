@@ -9,9 +9,9 @@ threshold_input <- tags$div(
     inputId = "threshold",
     label = NULL,
     value = 0.5,
-    min = 0.1,
+    min = 0.01,
     max = 1,
-    step = 0.001,
+    step = 0.01,
     width = "7em"
   ),
   tags$small(
