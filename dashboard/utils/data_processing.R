@@ -47,30 +47,6 @@ load_and_process_data <- function(species_id, model_id, site_id, year, threshold
     above_threshold <- final_data[, -1] > threshold
     count_above <- sum(above_threshold, na.rm = TRUE)
     message("- Cells above threshold (", threshold, "): ", count_above)
-
-    # Log the specific values above threshold
-#    if (count_above > 0) {
-#      message("Values above threshold:")
-#      # Convert to data.table for easier manipulation
-#      dt <- as.data.table(final_data)
-#      # Get all cells above threshold
-#      above_cells <- dt[, .SD > threshold, .SDcols = -1]
-#      # Get the row and column names for above threshold cells
-#      row_names <- dt$Time
-#      col_names <- names(dt)[-1]
-
-#      # Log each value above threshold with its position
-#      for (col in col_names) {
-#        col_values <- dt[[col]]
-#        above_in_col <- col_values > threshold
-#        if (any(above_in_col)) {
-#          for (i in which(above_in_col)) {
-#            message("  - ", row_names[i], " on ", col, ": ", col_values[i])
-#          }
-#        }
-#      }
-#    }
-
     final_data
   }, error = function(e) {
     # Log any errors that occur
@@ -86,7 +62,7 @@ execute_hasura_queries <- function(species_id, model_id, site_id, year, threshol
   # Log the queries being executed
   message("Executing Hasura queries with threshold: ", threshold)
   message("- All records query: ", gsub("\\s+", " ", queries$all_records))
-  message("- Inference query: ", gsub("\\s+", " ", queries$inference))
+  message("- Inference max query: ", gsub("\\s+", " ", queries$inference_max))
 
   all_records_response <- POST(
     url = hasura_url,
@@ -98,7 +74,7 @@ execute_hasura_queries <- function(species_id, model_id, site_id, year, threshol
   inference_response <- POST(
     url = hasura_url,
     add_headers(.headers = hasura_headers),
-    body = list(query = queries$inference),
+    body = list(query = queries$inference_max),
     encode = "json"
   )
 
@@ -317,31 +293,6 @@ create_heatmap_data_optimized <- function(events_dt) {
 
   # Return as data.frame for compatibility
   as.data.frame(heatmap_dt)
-}
-
-# Legacy wrapper functions for backward compatibility
-load_and_process_data_BACKUP <- function(species_id, model_id, site_id, year, threshold) {
-  query_results <- execute_hasura_queries(species_id, model_id, site_id, year, threshold)
-  events_df <- process_query_results(query_results$all_records, query_results$inference_results, threshold)
-  final_data <- transform_to_heatmap(events_df)
-  final_data
-}
-
-create_inference_lookup <- function(inference_results) {
-  # This is now handled in process_query_results for better performance
-  warning("create_inference_lookup is deprecated - use optimized process_query_results instead")
-  if (is.null(inference_results) || length(inference_results) == 0) {
-    return(numeric(0))
-  }
-  if (is.data.frame(inference_results)) {
-    setNames(inference_results$confidence, as.character(inference_results$record_id))
-  } else if (is.list(inference_results)) {
-    record_ids <- sapply(inference_results, function(x) as.character(x$record_id))
-    confidences <- sapply(inference_results, function(x) x$confidence)
-    setNames(confidences, record_ids)
-  } else {
-    numeric(0)
-  }
 }
 
 create_events_dataframe <- function(all_records, inference_lookup) {

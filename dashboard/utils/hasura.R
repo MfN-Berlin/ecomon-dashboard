@@ -200,7 +200,7 @@ build_queries <- function(species_id, model_id, site_id, year, threshold) {
   ', site_id, dates$start, dates$end)
 
   # OPTIMIZED: Remove nested record filter - use direct join for better performance
-  inference_query <- sprintf('
+  inference_max_query <- sprintf('
     query GetInferenceResults {
       model_inference_results_max_confidence(
         where: {
@@ -224,7 +224,7 @@ build_queries <- function(species_id, model_id, site_id, year, threshold) {
 
   list(
     all_records = all_records_query,
-    inference = inference_query
+    inference_max = inference_max_query
   )
 }
 

@@ -38,6 +38,7 @@ source("utils/ephem.R")
 source("components/heatmap.R")
 source("components/histogram.R")
 source("utils/data_processing.R")
+source("components/acoustic_activity.R")
 source("utils/url.R")
 source("utils/hasura.R")
 source("utils/download_data.R")
@@ -281,7 +282,6 @@ server <- function(input, output, session) {
   # No tab tracking needed - Shiny will preserve tab state naturally
   # The key is to NOT use renderUI for parts that contain tabsetPanel
 
-
   # Render dynamic UI for multiple heatmaps
   output$site_panels <- renderUI({
     site_data_list <- site_list()  # Use site_list instead of heatmap_data_list
@@ -367,13 +367,52 @@ server <- function(input, output, session) {
                   )
                 )
               ),
-              # Histogram tab
+              # Bin tab
               tabPanel(
-                title = "Histogram",
+                title = "Bin size",
                 tags$div(
                   class = "tab-pane-content",
                   tags$div(
                     class = "plot-container",
+                    tags$div(
+                      class = "bin-size-menu",
+                      style = "display: flex; align-items: center; gap: 10px; margin-bottom: 10px;",
+                      tags$span("Bin Size:", style = "font-weight: bold;"),
+                      numericInput(
+                        inputId = paste0("bin_size_", site_id),
+                        label = NULL,
+                        value = 0.01,
+                        min = 0.001,
+                        max = 1,
+                        step = 0.001
+                      )
+                    ),
+                    tags$div(
+                      class = "distribution-selector",
+                      style = "display: flex; gap: 10px; margin-bottom: 10px;",
+                      tags$span("Distribution of", style = "font-weight: bold;"),
+                      radioButtons(
+                        inputId = paste0("distribution_type_", site_id),
+                        label = NULL,
+                        choices = list(
+                          "All values" = "all",
+                          "Minutes with activity" = "activity"
+                        ),
+                        selected = "activity",
+                        inline = TRUE
+                      ),
+                      tags$script(
+                        HTML(
+                          sprintf(
+                            "$(document).ready(function() {
+                              $('input[name=\"distribution_type_%s\"][value=\"all\"]').prop('disabled', true);
+                              $('input[name=\"distribution_type_%s\"][value=\"all\"]').parent().css({'color': 'gray', 'cursor': 'not-allowed'});
+                            });",
+                            site_id, site_id
+                          )
+                        )
+                      )
+                    ),
                     tags$div(
                       class = "hist-plot",
                       plotlyOutput(paste0("hist_", site_id), width = "900px", height = "400px")
@@ -384,14 +423,51 @@ server <- function(input, output, session) {
               # Acoustic activity tab
               tabPanel(
                 title = "Acoustic activity",
+                value = paste0("acoustic_", site_id),
                 tags$div(
                   class = "tab-pane-content",
                   tags$div(
                     class = "plot-container",
-                    tags$h3("To do"),
+                    tags$div(
+                      class = "interval-menu",
+                      style = "display: flex; align-items: center; gap: 10px;",
+                      tags$span("Interval:", style = "font-weight: bold;"),
+                      selectInput(
+                        inputId = paste0("interval_", site_id),
+                        label = NULL,
+                        choices = list(
+                          "month" = "month",
+                          "10-day" = "10-day",
+                          "5-day" = "5-day",
+                          "daily" = "daily"
+                        ),
+                        selected = "daily"
+                      )
+                    ),
                     tags$div(
                       class = "events-plot",
-                      plotOutput(paste0("events_", site_id), height = "410px")
+                      plotlyOutput(paste0("events_", site_id), width = "900px", height = "400px")
+                    )
+                  )
+                )
+              ),
+              # Diel acoustic activity tab
+              tabPanel(
+                title = "Diel acoustic activity",
+                value = paste0("diel_", site_id),
+                tags$div(
+                  class = "tab-pane-content",
+                  tags$div(
+                    class = "plot-container",
+                    tags$div(
+                      class = "date-range-info",
+                      style = "display: flex; align-items: center; gap: 10px; margin-bottom: 10px;",
+                      tags$span("Date Range:", style = "font-weight: bold;"),
+                      textOutput(paste0("date_range_", site_id), inline = TRUE)
+                    ),
+                    tags$div(
+                      class = "diel-plot",
+                      plotlyOutput(paste0("diel_", site_id), width = "900px", height = "400px")
                     )
                   )
                 )
@@ -478,6 +554,8 @@ server <- function(input, output, session) {
 
           # Render histogram
           histogram_output_id <- paste0("hist_", site_id)
+          bin_size_input_id <- paste0("bin_size_", site_id)
+          distribution_input_id <- paste0("distribution_type_", site_id)
           output[[histogram_output_id]] <- renderPlotly({
             render_histogram_plot(
               site_data$data,
@@ -485,16 +563,49 @@ server <- function(input, output, session) {
               url_year(),
               site_data$site_info$name,
               model_info()$name,
+              species_info()$name,
+              bin_size = input[[bin_size_input_id]],
+              distribution_type = input[[distribution_input_id]]
+            )
+          })
+
+          # Render acoustic activity
+          events_output_id <- paste0("events_", site_id)
+          interval_input_id <- paste0("interval_", site_id)
+          output[[events_output_id]] <- renderPlotly({
+            render_acoustic_activity_plot(
+              site_data$data,
+              threshold(),
+              url_year(),
+              input[[interval_input_id]],
+              site_data$site_info$name,
+              model_info()$name,
               species_info()$name
             )
           })
 
-          # Render moon timeline
-#          output[[moon_output_id]] <- renderPlot({
-#            render_moon_timeline(url_year())
-#          })
+          # Render diel acoustic activity
+          diel_output_id <- paste0("diel_", site_id)
+          output[[diel_output_id]] <- renderPlotly({
+            render_diel_acoustic_activity_plot(
+              site_data$data,
+              threshold(),
+              url_year(),
+              site_data$site_info$name,
+              model_info()$name,
+              species_info()$name,
+              lat = site_data$site_info$latitude,
+              lon = site_data$site_info$longitude
+            )
+          })
 
-          # Render moon timeline directly
+          # Render date range placeholder
+          date_range_output_id <- paste0("date_range_", site_id)
+          output[[date_range_output_id]] <- renderText({
+            "YYYY-MM-DD to YYYY-MM-DD"
+          })
+
+          # Render moon timeline
           output[[moon_output_id]] <- renderPlot({
             year <- url_year()
             moon_toggle <- !is.null(input$moonphase_toggle) && input$moonphase_toggle %% 2 == 1
