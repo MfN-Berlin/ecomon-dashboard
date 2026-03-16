@@ -39,8 +39,12 @@ prepare_heatmap_data <- function(heatmap_data, threshold, year) {
   # Apply threshold - values below threshold become -1 (background color)
   heatmap_long$Value[!is.na(heatmap_long$Value) & heatmap_long$Value < threshold] <- -1
 
-  # Remove rows where Value is NA (no actual data)
-  heatmap_long <- heatmap_long[!is.na(heatmap_long$Value), ]
+  # Don't convert anything to NA here - we want 0 values to be transparent
+  # The color scale will handle this with na.value = "transparent"
+  # But we need to ensure the data structure is complete
+
+  # Keep NA values as NA (they will be transparent in the plot)
+  # heatmap_long <- heatmap_long[!is.na(heatmap_long$Value), ]
 
   # Ensure Time is properly ordered
   heatmap_long$Time <- factor(heatmap_long$Time, levels = all_times)
@@ -371,6 +375,9 @@ render_heatmap_plot <- function(
     }
   }
 
+
+  # Set white background for missing data (transparent NA values)
+  plt <- plt %>% plotly::layout(plot_bgcolor = "white")
 
   # DOWNLOAD SVG BUTTON
   plotly::config(
