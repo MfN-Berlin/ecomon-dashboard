@@ -272,12 +272,32 @@ create_heatmap_data_optimized <- function(events_dt) {
   # Ensure Value is numeric using data.table syntax
   events_dt[, Value := as.numeric(Value)]
 
+  # Get the year from the dates to create complete date range
+  if (nrow(events_dt) > 0) {
+    years <- unique(format(events_dt$Date, "%Y"))
+    if (length(years) == 1) {
+      year <- as.numeric(years)
+      all_dates <- seq.Date(
+        from = as.Date(sprintf("%d-01-01", year)),
+        to = as.Date(sprintf("%d-12-31", year)),
+        by = "day"
+      )
+      
+      # Create a data.table with all dates to ensure complete columns
+      all_dates_dt <- data.table(Date = all_dates)
+      
+      # Merge to ensure all dates are present, even if no data
+      events_dt <- merge(events_dt, all_dates_dt, by = "Date", all.y = TRUE)
+      # Keep NA values as NA - they will be handled as missing data
+    }
+  }
+
   # Use data.table's extremely fast dcast with optimizations
   heatmap_dt <- dcast(
     events_dt,
     Time ~ Date,
     value.var = "Value",
-    fill = 0,
+    fill = NA,  # Use NA for missing values
     fun.aggregate = function(x) x[1]  # Take first value if multiple
   )
 
