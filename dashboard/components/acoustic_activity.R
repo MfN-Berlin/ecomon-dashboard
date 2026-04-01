@@ -78,8 +78,46 @@ render_acoustic_activity_plot <- function(
         panel.grid.major = element_line(color = "gray90"),
         panel.grid.minor = element_blank()
       ) +
-      scale_x_date(date_breaks = "10 days", date_labels = "%Y-%m-%d")
+      scale_x_date(limits = c(as.Date(paste0(year, "-01-01")), as.Date(paste0(year, "-12-31"))), breaks = seq(as.Date(paste0(year, "-01-01")), as.Date(paste0(year, "-12-31")), by = "month"), date_labels = "%b %Y", expand = c(0, 0))
   } else {
+    # Generate all possible intervals for the year
+    if (interval == "month") {
+      all_intervals <- paste0(year, "-", sprintf("%02d", 1:12))
+    } else if (interval == "10-day") {
+      all_intervals <- character()
+      for (month in 1:12) {
+        for (day in seq(1, 31, by = 10)) {
+          if (day <= 31) {
+            all_intervals <- c(all_intervals, paste0(year, "-", sprintf("%02d", month), "-", sprintf("%02d", day)))
+          }
+        }
+      }
+    } else if (interval == "5-day") {
+      all_intervals <- character()
+      for (month in 1:12) {
+        for (day in seq(1, 31, by = 5)) {
+          if (day <= 31) {
+            all_intervals <- c(all_intervals, paste0(year, "-", sprintf("%02d", month), "-", sprintf("%02d", day)))
+          }
+        }
+      }
+    }
+    
+    # Ensure the intervals span the full year from Jan 1 to Dec 31
+    if (interval != "month") {
+      # Add Jan 1 if not present
+      if (!paste0(year, "-01-01") %in% all_intervals) {
+        all_intervals <- c(paste0(year, "-01-01"), all_intervals)
+      }
+      # Add Dec 31 if not present
+      if (!paste0(year, "-12-31") %in% all_intervals) {
+        all_intervals <- c(all_intervals, paste0(year, "-12-31"))
+      }
+    }
+    
+    # Convert Interval to factor with all possible levels
+    aggregated_data$Interval <- factor(aggregated_data$Interval, levels = all_intervals)
+    
     p <- ggplot(aggregated_data, aes(x = Interval, y = MinutesAboveThreshold)) +
       geom_histogram(stat = "identity", bins = 30) +
       labs(
@@ -96,7 +134,8 @@ render_acoustic_activity_plot <- function(
         panel.border = element_rect(color = "black", fill = NA),
         panel.grid.major = element_line(color = "gray90"),
         panel.grid.minor = element_blank()
-      )
+      ) +
+      scale_x_discrete(limits = all_intervals, expand = c(0, 0))
   }
 
   # Convert to plotly
