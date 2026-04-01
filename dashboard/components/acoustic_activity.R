@@ -62,7 +62,7 @@ render_acoustic_activity_plot <- function(
   # Create base plot using ggplot2
   if (interval == "daily") {
     p <- ggplot(aggregated_data, aes(x = Date, y = MinutesAboveThreshold)) +
-      geom_histogram(stat = "identity", bins = 30) +
+      geom_col() +
       labs(
         x = paste("Interval (", interval, ")", sep = ""),
         y = "Minutes Above Threshold",
@@ -75,7 +75,7 @@ render_acoustic_activity_plot <- function(
         axis.title = element_text(size = 11),
         plot.title = element_text(hjust = 0.5, size = 12),
         panel.border = element_rect(color = "black", fill = NA),
-        panel.grid.major = element_line(color = "gray90"),
+        panel.grid.major = element_line(color = "gray95", linewidth = 1.5),
         panel.grid.minor = element_blank()
       ) +
       scale_x_date(limits = c(as.Date(paste0(year, "-01-01")), as.Date(paste0(year, "-12-31"))), breaks = seq(as.Date(paste0(year, "-01-01")), as.Date(paste0(year, "-12-31")), by = "month"), date_labels = "%b %Y", expand = c(0, 0))
@@ -102,7 +102,7 @@ render_acoustic_activity_plot <- function(
         }
       }
     }
-    
+
     # Ensure the intervals span the full year from Jan 1 to Dec 31
     if (interval != "month") {
       # Add Jan 1 if not present
@@ -114,12 +114,12 @@ render_acoustic_activity_plot <- function(
         all_intervals <- c(all_intervals, paste0(year, "-12-31"))
       }
     }
-    
+
     # Convert Interval to factor with all possible levels
     aggregated_data$Interval <- factor(aggregated_data$Interval, levels = all_intervals)
-    
+
     p <- ggplot(aggregated_data, aes(x = Interval, y = MinutesAboveThreshold)) +
-      geom_histogram(stat = "identity", bins = 30) +
+      geom_col() +
       labs(
         x = paste("Interval (", interval, ")", sep = ""),
         y = "Minutes Above Threshold",
@@ -132,7 +132,7 @@ render_acoustic_activity_plot <- function(
         axis.title = element_text(size = 11),
         plot.title = element_text(hjust = 0.5, size = 12),
         panel.border = element_rect(color = "black", fill = NA),
-        panel.grid.major = element_line(color = "gray90"),
+        panel.grid.major = element_line(color = "gray95", linewidth = 1.5),
         panel.grid.minor = element_blank()
       ) +
       scale_x_discrete(limits = all_intervals, expand = c(0, 0))
@@ -183,22 +183,22 @@ calc_all_sun_times <- function(diel_data, lat, lon) {
   all_sun_times <- compute_sun_times(data.frame(Date = all_dates), lat, lon)
   all_sunrise <- as.POSIXct(all_sun_times$sunrise) + 3600
   all_sunset <- as.POSIXct(all_sun_times$sunset) + 3600
-  
+
   # Extract time-of-day as "HH:MM" for both sunrise and sunset
   all_sunrise_times <- format(all_sunrise, "%H:%M")
   all_sunset_times <- format(all_sunset, "%H:%M")
-  
+
   min_sunrise <- min(all_sunrise_times)
   max_sunrise <- max(all_sunrise_times)
   min_sunset <- min(all_sunset_times)
   max_sunset <- max(all_sunset_times)
-  
+
   message("Earliest sunrise (+1h): ", min_sunrise)
   message("Latest sunrise (+1h): ", max_sunrise)
   message("Earliest sunset (+1h): ", min_sunset)
   message("Latest sunset (+1h): ", max_sunset)
 
-  return(list(all_sun_times = all_sun_times, 
+  return(list(all_sun_times = all_sun_times,
               min_sunrise = min_sunrise, max_sunrise = max_sunrise,
               min_sunset = min_sunset, max_sunset = max_sunset))
 }
@@ -254,13 +254,13 @@ render_sunrise_sunset <- function(diel_data, aggregated_data, lat, lon, p) {
         alpha = 0.33,
         inherit.aes = FALSE  # Prevents inheriting global aesthetics
       )
-    
+
     # Draw uncertainty band for sunset
     idx_earliest_sunset <- which(levels(aggregated_data$TimeOfDay) == all_sun_times_info$min_sunset)  # nolint: line_length_linter.
     idx_latest_sunset   <- which(levels(aggregated_data$TimeOfDay) == all_sun_times_info$max_sunset)  # nolint: line_length_linter.
     message("Index of earliest sunset (", all_sun_times_info$min_sunset, ": ", idx_earliest_sunset)  # nolint: line_length_linter.
     message("Index of latest sunset (", all_sun_times_info$max_sunset, ": ", idx_latest_sunset)
-    
+
     p <- p +
       geom_rect(
         aes(
