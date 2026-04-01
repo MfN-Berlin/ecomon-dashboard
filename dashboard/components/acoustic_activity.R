@@ -61,9 +61,8 @@ render_acoustic_activity_plot <- function(
 
   # Create base plot using ggplot2
   if (interval == "daily") {
-    p <- ggplot(aggregated_data, aes(x = Date, y = MinutesAboveThreshold, group = 1)) +
-      geom_line() +
-      geom_point() +
+    p <- ggplot(aggregated_data, aes(x = Date, y = MinutesAboveThreshold)) +
+      geom_histogram(stat = "identity", bins = 30) +
       labs(
         x = paste("Interval (", interval, ")", sep = ""),
         y = "Minutes Above Threshold",
@@ -81,9 +80,8 @@ render_acoustic_activity_plot <- function(
       ) +
       scale_x_date(date_breaks = "10 days", date_labels = "%Y-%m-%d")
   } else {
-    p <- ggplot(aggregated_data, aes(x = Interval, y = MinutesAboveThreshold, group = 1)) +
-      geom_line() +
-      geom_point() +
+    p <- ggplot(aggregated_data, aes(x = Interval, y = MinutesAboveThreshold)) +
+      geom_histogram(stat = "identity", bins = 30) +
       labs(
         x = paste("Interval (", interval, ")", sep = ""),
         y = "Minutes Above Threshold",
