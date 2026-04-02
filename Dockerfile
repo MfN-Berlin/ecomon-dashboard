@@ -18,11 +18,11 @@ RUN rm -rf /srv/shiny-server/*
 # Copy renv.lock into the container
 COPY renv.lock /srv/shiny-server/dashboard/renv.lock
 
-# Install renv and restore exact package versions system-wide
-RUN R -e "install.packages('renv', repos='https://cloud.r-project.org/'); \
-          renv::restore(lockfile='/srv/shiny-server/dashboard/renv.lock', \
-                        prompt=FALSE, \
-                        repos='https://cloud.r-project.org/')"
+# Install renv
+RUN R -e "install.packages('renv', repos='https://cloud.r-project.org/')"
+
+# Restore exact package versions system-wide
+RUN R -e "renv::restore(lockfile='/srv/shiny-server/dashboard/renv.lock', prompt=FALSE, repos='https://cloud.r-project.org/')"
 
 # Copy the app into the container
 COPY dashboard/ /srv/shiny-server/dashboard/
