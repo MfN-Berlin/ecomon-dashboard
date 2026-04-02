@@ -24,7 +24,7 @@ RUN R -e "install.packages('renv', repos='https://cloud.r-project.org/')"
 
 # Restore exact package versions system-wide
 #RUN R -e "renv::restore(lockfile='/srv/shiny-server/dashboard/renv.lock', prompt=FALSE, repos='https://cloud.r-project.org/')"
-RUN R -e "install.packages(c('jsonlite', 'promises', 'Rcpp', 'later', 'yaml', 'knitr', 'shiny', 'bslib', 'httpuv', 'sass', 'mgcv', 'digest', 'fontawesome', 'rmarkdown', 'htmltools', 'crosstalk', 'data.table', 'ggplot2', 'htmlwidgets', 'httr', 'openxlsx', 'plotly', 'plyr', 'reshape2', 'suncalc', 'viridis'), repos='https://cloud.r-project.org/')"
+RUN R -e "install.packages(c('jsonlite', 'promises', 'Rcpp', 'later', 'yaml', 'knitr', 'shiny', 'bslib', 'httpuv', 'sass', 'mgcv', 'digest', 'fontawesome', 'rmarkdown', 'htmltools', 'crosstalk', 'data.table', 'ggplot2', 'htmlwidgets', 'httr', 'openxlsx', 'plotly', 'plyr', 'reshape2', 'suncalc', 'viridis', 'png', 'ini', 'data.table'), repos='https://cloud.r-project.org/')"
 
 # Copy the app into the container
 COPY dashboard/ /srv/shiny-server/dashboard/
