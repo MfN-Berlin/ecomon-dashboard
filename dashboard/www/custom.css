@@ -256,7 +256,7 @@ position: relative;
 }
 
 /* Heatmap plot size - fixed width */
-.heatmap-plot {
+.heatmap-plot, events-plot {
   width: 100%; /* 100% of parent */
   height: 400px;
   padding: 0;
@@ -413,5 +413,11 @@ position: relative;
 
 /* Hide the plotly modebar button with data-title="Download plot" */
 .modebar-btn[data-title="Download plot"] {
-  display: none !important;
+/*  display: none !important; */
+}
+
+.events-plot .modebar-container {
+  top: 30px !important;
+  right: -51px !important;
+  width: 51px !important;
 }

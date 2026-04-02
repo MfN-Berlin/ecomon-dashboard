@@ -34,13 +34,14 @@ create_activity_controls <- function(site_id) {
         title = "Download data (Excel)",
         class = "btn btn-success me-2"
       ),
-      actionButton(
-        paste0("download_image_", site_id),
-        label = NULL,
-        icon = icon("image", class = "bi bi-image"),
-        title = "Download publication-quality image",
-        class = "btn btn-outline-secondary"
-      )
+
+#      actionButton(
+#        paste0("download_image_", site_id),
+#        label = NULL,
+#        icon = icon("image", class = "bi bi-image"),
+#        title = "Download publication-quality image",
+#        class = "btn btn-outline-secondary"
+#      )
     )
   )
 }

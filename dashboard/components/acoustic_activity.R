@@ -61,9 +61,8 @@ render_acoustic_activity_plot <- function(
 
   # Create base plot using ggplot2
   if (interval == "daily") {
-    p <- ggplot(aggregated_data, aes(x = Date, y = MinutesAboveThreshold, group = 1)) +
-      geom_line() +
-      geom_point() +
+    p <- ggplot(aggregated_data, aes(x = Date, y = MinutesAboveThreshold)) +
+      geom_col() +
       labs(
         x = paste("Interval (", interval, ")", sep = ""),
         y = "Minutes Above Threshold",
@@ -76,14 +75,51 @@ render_acoustic_activity_plot <- function(
         axis.title = element_text(size = 11),
         plot.title = element_text(hjust = 0.5, size = 12),
         panel.border = element_rect(color = "black", fill = NA),
-        panel.grid.major = element_line(color = "gray90"),
+        panel.grid.major = element_line(color = "gray95", linewidth = 1.5),
         panel.grid.minor = element_blank()
       ) +
-      scale_x_date(date_breaks = "10 days", date_labels = "%Y-%m-%d")
+      scale_x_date(limits = c(as.Date(paste0(year, "-01-01")), as.Date(paste0(year, "-12-31"))), breaks = seq(as.Date(paste0(year, "-01-01")), as.Date(paste0(year, "-12-31")), by = "month"), date_labels = "%b %Y", expand = c(0, 0))
   } else {
-    p <- ggplot(aggregated_data, aes(x = Interval, y = MinutesAboveThreshold, group = 1)) +
-      geom_line() +
-      geom_point() +
+    # Generate all possible intervals for the year
+    if (interval == "month") {
+      all_intervals <- paste0(year, "-", sprintf("%02d", 1:12))
+    } else if (interval == "10-day") {
+      all_intervals <- character()
+      for (month in 1:12) {
+        for (day in seq(1, 31, by = 10)) {
+          if (day <= 31) {
+            all_intervals <- c(all_intervals, paste0(year, "-", sprintf("%02d", month), "-", sprintf("%02d", day)))
+          }
+        }
+      }
+    } else if (interval == "5-day") {
+      all_intervals <- character()
+      for (month in 1:12) {
+        for (day in seq(1, 31, by = 5)) {
+          if (day <= 31) {
+            all_intervals <- c(all_intervals, paste0(year, "-", sprintf("%02d", month), "-", sprintf("%02d", day)))
+          }
+        }
+      }
+    }
+
+    # Ensure the intervals span the full year from Jan 1 to Dec 31
+    if (interval != "month") {
+      # Add Jan 1 if not present
+      if (!paste0(year, "-01-01") %in% all_intervals) {
+        all_intervals <- c(paste0(year, "-01-01"), all_intervals)
+      }
+      # Add Dec 31 if not present
+      if (!paste0(year, "-12-31") %in% all_intervals) {
+        all_intervals <- c(all_intervals, paste0(year, "-12-31"))
+      }
+    }
+
+    # Convert Interval to factor with all possible levels
+    aggregated_data$Interval <- factor(aggregated_data$Interval, levels = all_intervals)
+
+    p <- ggplot(aggregated_data, aes(x = Interval, y = MinutesAboveThreshold)) +
+      geom_col() +
       labs(
         x = paste("Interval (", interval, ")", sep = ""),
         y = "Minutes Above Threshold",
@@ -96,9 +132,10 @@ render_acoustic_activity_plot <- function(
         axis.title = element_text(size = 11),
         plot.title = element_text(hjust = 0.5, size = 12),
         panel.border = element_rect(color = "black", fill = NA),
-        panel.grid.major = element_line(color = "gray90"),
+        panel.grid.major = element_line(color = "gray95", linewidth = 1.5),
         panel.grid.minor = element_blank()
-      )
+      ) +
+      scale_x_discrete(limits = all_intervals, breaks = if (interval == "10-day") all_intervals[seq(1, length(all_intervals), by = 2)] else if (interval == "5-day") all_intervals[seq(1, length(all_intervals), by = 4)] else all_intervals, expand = c(0, 0))
   }
 
   # Convert to plotly
@@ -107,9 +144,26 @@ render_acoustic_activity_plot <- function(
   # Configure plotly
   plotly::config(
     plt,
-    displayModeBar = FALSE,
-    displaylogo = FALSE
+    displayModeBar = TRUE,
+    displaylogo = FALSE,
+    toImageButtonOptions = list(
+      format = 'svg',
+      filename = get_filename("AC", site_name, model_name, year, species_name, threshold_val),
+      height = 400,
+      width = 800,
+      scale = 2
+    ),
+    modeBarButtonsToRemove = c(
+      "autoScale2d",
+      "select2d", "lasso2d",
+      "hoverClosestCartesian", "hoverCompareCartesian",
+      "toggleSpikelines",
+      "zoom2d", "zoomIn2d", "zoomOut2d", "pan2d", "resetScale2d"
+    ),
+    modeBarButtonsToAdd = c("toImage")
   )
+
+
 }
 
 get_min_max_dates <- function(diel_data) {
@@ -146,22 +200,22 @@ calc_all_sun_times <- function(diel_data, lat, lon) {
   all_sun_times <- compute_sun_times(data.frame(Date = all_dates), lat, lon)
   all_sunrise <- as.POSIXct(all_sun_times$sunrise) + 3600
   all_sunset <- as.POSIXct(all_sun_times$sunset) + 3600
-  
+
   # Extract time-of-day as "HH:MM" for both sunrise and sunset
   all_sunrise_times <- format(all_sunrise, "%H:%M")
   all_sunset_times <- format(all_sunset, "%H:%M")
-  
+
   min_sunrise <- min(all_sunrise_times)
   max_sunrise <- max(all_sunrise_times)
   min_sunset <- min(all_sunset_times)
   max_sunset <- max(all_sunset_times)
-  
+
   message("Earliest sunrise (+1h): ", min_sunrise)
   message("Latest sunrise (+1h): ", max_sunrise)
   message("Earliest sunset (+1h): ", min_sunset)
   message("Latest sunset (+1h): ", max_sunset)
 
-  return(list(all_sun_times = all_sun_times, 
+  return(list(all_sun_times = all_sun_times,
               min_sunrise = min_sunrise, max_sunrise = max_sunrise,
               min_sunset = min_sunset, max_sunset = max_sunset))
 }
@@ -217,13 +271,13 @@ render_sunrise_sunset <- function(diel_data, aggregated_data, lat, lon, p) {
         alpha = 0.33,
         inherit.aes = FALSE  # Prevents inheriting global aesthetics
       )
-    
+
     # Draw uncertainty band for sunset
     idx_earliest_sunset <- which(levels(aggregated_data$TimeOfDay) == all_sun_times_info$min_sunset)  # nolint: line_length_linter.
     idx_latest_sunset   <- which(levels(aggregated_data$TimeOfDay) == all_sun_times_info$max_sunset)  # nolint: line_length_linter.
     message("Index of earliest sunset (", all_sun_times_info$min_sunset, ": ", idx_earliest_sunset)  # nolint: line_length_linter.
     message("Index of latest sunset (", all_sun_times_info$max_sunset, ": ", idx_latest_sunset)
-    
+
     p <- p +
       geom_rect(
         aes(

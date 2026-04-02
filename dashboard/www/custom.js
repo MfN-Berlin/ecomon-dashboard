@@ -73,6 +73,7 @@ $(document).on('shiny:connected shiny:inputchanged shiny:value shiny:bound shiny
 });
 
 // Download SVG image of the heatmap plot for any site
+/*
 $(document).on('click', '[id^="download_image_"]', function() {
   // Extract SITEID from the button's ID
   var btnId = $(this).attr('id');
@@ -97,3 +98,4 @@ $(document).on('click', '[id^="download_image_"]', function() {
     }
   }
 });
+*/

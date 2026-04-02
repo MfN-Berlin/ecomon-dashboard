@@ -33,3 +33,4 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ghcr.io/${{ env.OWNER_LC }}/akwamo-webservice-next-dashboard:latest
+          progress: plain  # Enable debug output
