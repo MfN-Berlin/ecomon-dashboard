@@ -27,7 +27,7 @@ library(png)
 library(httr)
 library(jsonlite)
 library(ini)
-library(data.table)
+#library(data.table)
 library(suncalc)
 library(plotly)
 

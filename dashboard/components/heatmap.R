@@ -14,7 +14,7 @@ prepare_heatmap_data <- function(heatmap_data, threshold, year) {
   year <- as.numeric(year)
 
   # Convert heatmap_data to long format for ggplot using melt
-  heatmap_long <- melt(
+  heatmap_long <- reshape2::melt(
     heatmap_data,
     id.vars = "Time",
     variable.name = "Date",
