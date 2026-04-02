@@ -144,9 +144,26 @@ render_acoustic_activity_plot <- function(
   # Configure plotly
   plotly::config(
     plt,
-    displayModeBar = FALSE,
-    displaylogo = FALSE
+    displayModeBar = TRUE,
+    displaylogo = FALSE,
+    toImageButtonOptions = list(
+      format = 'svg',
+      filename = get_filename("AC", site_name, model_name, year, species_name, threshold_val),
+      height = 400,
+      width = 800,
+      scale = 2
+    ),
+    modeBarButtonsToRemove = c(
+      "autoScale2d",
+      "select2d", "lasso2d",
+      "hoverClosestCartesian", "hoverCompareCartesian",
+      "toggleSpikelines",
+      "zoom2d", "zoomIn2d", "zoomOut2d", "pan2d", "resetScale2d"
+    ),
+    modeBarButtonsToAdd = c("toImage")
   )
+
+
 }
 
 get_min_max_dates <- function(diel_data) {
