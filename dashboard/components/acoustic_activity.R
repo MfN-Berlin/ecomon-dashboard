@@ -135,7 +135,7 @@ render_acoustic_activity_plot <- function(
         panel.grid.major = element_line(color = "gray95", linewidth = 1.5),
         panel.grid.minor = element_blank()
       ) +
-      scale_x_discrete(limits = all_intervals, expand = c(0, 0))
+      scale_x_discrete(limits = all_intervals, breaks = if (interval == "10-day") all_intervals[seq(1, length(all_intervals), by = 2)] else if (interval == "5-day") all_intervals[seq(1, length(all_intervals), by = 4)] else all_intervals, expand = c(0, 0))
   }
 
   # Convert to plotly
