@@ -1,4 +1,4 @@
-FROM rocker/shiny:4.5.3
+FROM rocker/shiny:4.6.0
 
 # Ensure packages are installed system-wide
 ENV R_LIBS_SITE=/usr/local/lib/R/site-library
