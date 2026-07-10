@@ -180,14 +180,13 @@ server <- function(input, output, session) {
 
     if (!is.null(current_label_id) && !is.null(current_model_id)) {
       store_threshold(current_label_id, current_model_id, current_threshold)
-    } else {
-      message("Label ID or Model ID is not available.")
-    }
-  })
-
-  # Fetch species information when species_id changes
-  observe({
-    if (!is.null(url_species_id())) {
+      # Update the threshold status text
+      output$threshold_status <- renderUI({
+        tags$div(
+          "This is the preliminary threshold for this species and model.",
+          style = "margin-top: -1em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;"
+        )
+      })
       tryCatch({
         species_data <- get_species_info(url_species_id())
         species_info(species_data)
@@ -197,6 +196,16 @@ server <- function(input, output, session) {
         cat("Error loading species info:", e$message, "\n")
         species_info(NULL)
       })
+    }
+  })
+
+  # Fetch the latest threshold when species_id and model_id are available
+  observe({
+    if (!is.null(url_species_id()) && !is.null(url_model_id())) {
+      latest_threshold <- get_latest_threshold(url_species_id(), url_model_id())
+      if (!is.null(latest_threshold)) {
+        updateNumericInput(session, "threshold", value = latest_threshold)
+      }
     }
   })
 

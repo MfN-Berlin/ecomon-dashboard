@@ -59,15 +59,16 @@ threshold_input <- tags$div(
     inputId = "threshold",
     label = NULL,
     value = default_threshold,
-    min = 0.1,
+    min = 0.01,
     max = 1,
     step = 0.01,
     width = "7em"
   ),
   tags$small(
-    "Range: 0.1 to 1.00",
+    "Range: 0.01 to 1.00",
     style = "margin-top: -1em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;" # Hint styling
-  )
+  ),
+  uiOutput("threshold_status")
 )
 
 # Settings button
