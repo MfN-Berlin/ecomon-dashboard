@@ -133,6 +133,10 @@ server <- function(input, output, session) {
   # Reactive value for threshold
   threshold <- reactiveVal(0.5)
 
+  # Track whether a preliminary threshold is present and its value
+  preliminary_set <- reactiveVal(FALSE)
+  preliminary_threshold_value <- reactiveVal(NULL)
+
   # site info from Hasura
   site_info <- reactiveVal(NULL)
 
@@ -157,9 +161,35 @@ server <- function(input, output, session) {
   # Update threshold reactive value when debounced input changes
   observeEvent(threshold_debounced(), {
     if (!is.null(threshold_debounced()) && !is.na(threshold_debounced())) {
-      threshold(threshold_debounced())
+      new_val <- as.numeric(threshold_debounced())
+      threshold(new_val)
       # Update canvas_threshold to keep them in sync
-      updateNumericInput(session, "canvas_threshold", value = threshold_debounced())
+      updateNumericInput(session, "canvas_threshold", value = new_val)
+
+      # If a preliminary threshold is currently displayed and user changed the
+      # input to a different value, show the override prompt message.
+      prev_val <- preliminary_threshold_value()
+      # Compare with a small tolerance to avoid floating-point equality issues
+      tol <- 1e-9
+      if (isTRUE(preliminary_set()) && !is.null(prev_val) && !is.na(prev_val) && !is.na(new_val)) {
+        if (abs(new_val - as.numeric(prev_val)) > tol) {
+          # Value differs from preliminary -> show override prompt
+          output$threshold_status <- renderUI({
+            tags$div(
+              HTML('Preliminary threshold has been overriden. Would you like to <a href="#" onclick="Shiny.setInputValue(\'set_preliminary_threshold_btn\', Math.random()); return false;" style="color: #0d6efd; cursor: pointer; text-decoration: underline;">update it</a>?'),
+              style = "margin-top: -1em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;"
+            )
+          })
+        } else {
+          # Value equals preliminary -> restore the preliminary message
+          output$threshold_status <- renderUI({
+            tags$div(
+              "This is the preliminary threshold for this species and model.",
+              style = "margin-top: -1em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;"
+            )
+          })
+        }
+      }
     }
   })
 
@@ -170,6 +200,25 @@ server <- function(input, output, session) {
       default_threshold <- 0.5
     }
     updateNumericInput(session, "threshold", value = default_threshold)
+    # Check if there was a preliminary threshold and if it differs from default
+    prev_val <- preliminary_threshold_value()
+    tol <- 1e-9
+
+    if (isTRUE(preliminary_set()) && !is.null(prev_val) && !is.na(prev_val) &&
+        abs(as.numeric(default_threshold) - as.numeric(prev_val)) > tol) {
+      # Default differs from preliminary -> show override message
+      output$threshold_status <- renderUI({
+        tags$div(
+          HTML('Preliminary threshold has been overriden. Would you like to <a href="#" onclick="Shiny.setInputValue(\'set_preliminary_threshold_btn\', Math.random()); return false;" style="color: #0d6efd; cursor: pointer; text-decoration: underline;">update it</a>?'),
+          style = "margin-top: -1em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;"
+        )
+      })
+    } else {
+      # Clear any preliminary threshold status message and flags
+      output$threshold_status <- renderUI({ NULL })
+      preliminary_set(FALSE)
+      preliminary_threshold_value(NULL)
+    }
   })
 
   # Store the current threshold as preliminary
@@ -187,6 +236,9 @@ server <- function(input, output, session) {
           style = "margin-top: -1em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;"
         )
       })
+      # Mark preliminary threshold state and save the value
+      preliminary_set(TRUE)
+      preliminary_threshold_value(as.numeric(current_threshold))
       tryCatch({
         species_data <- get_species_info(url_species_id())
         species_info(species_data)
@@ -205,6 +257,21 @@ server <- function(input, output, session) {
       latest_threshold <- get_latest_threshold(url_species_id(), url_model_id())
       if (!is.null(latest_threshold)) {
         updateNumericInput(session, "threshold", value = latest_threshold)
+        # Show the same preliminary message as when user sets it via the menu
+        output$threshold_status <- renderUI({
+          tags$div(
+            "This is the preliminary threshold for this species and model.",
+            style = "margin-top: -1em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;"
+          )
+        })
+        # Store preliminary flag and value
+        preliminary_set(TRUE)
+        preliminary_threshold_value(as.numeric(latest_threshold))
+      } else {
+        # Clear the threshold status when no preliminary threshold exists
+        output$threshold_status <- renderUI({ NULL })
+        preliminary_set(FALSE)
+        preliminary_threshold_value(NULL)
       }
     }
   })
