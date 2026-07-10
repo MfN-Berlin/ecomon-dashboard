@@ -129,7 +129,6 @@ server <- function(input, output, session) {
   url_species_id <- reactiveVal(NULL)
   url_model_id <- reactiveVal(NULL)
   url_year <- reactiveVal(NULL)
-  url_threshold <- reactiveVal(NULL)
 
   # Reactive value for threshold
   threshold <- reactiveVal(0.5)
@@ -148,18 +147,8 @@ server <- function(input, output, session) {
     parse_url_parameters(
       session,
       url_site_ids, url_species_id,
-      url_model_id, url_year, url_threshold
+      url_model_id, url_year
     )
-  })
-
-  # Initialize threshold from URL parameter or use default
-  observe({
-    if (!is.null(url_threshold())) {
-      threshold(url_threshold())
-      # Update the UI inputs to reflect the URL threshold
-      updateNumericInput(session, "threshold", value = url_threshold())
-      updateNumericInput(session, "canvas_threshold", value = url_threshold())
-    }
   })
 
   # Debounced threshold input (waits 500ms after user stops typing)
@@ -171,6 +160,28 @@ server <- function(input, output, session) {
       threshold(threshold_debounced())
       # Update canvas_threshold to keep them in sync
       updateNumericInput(session, "canvas_threshold", value = threshold_debounced())
+    }
+  })
+
+  # Reset threshold to system default
+  observeEvent(input$reset_threshold_btn, {
+    default_threshold <- as.numeric(Sys.getenv("DEFAULT_THRESHOLD", unset = "0.5"))
+    if (is.na(default_threshold) || default_threshold < 0.1 || default_threshold > 1.0) {
+      default_threshold <- 0.5
+    }
+    updateNumericInput(session, "threshold", value = default_threshold)
+  })
+
+  # Store the current threshold as preliminary
+  observeEvent(input$set_preliminary_threshold_btn, {
+    current_threshold <- input$threshold
+    current_label_id <- url_species_id()
+    current_model_id <- url_model_id()
+
+    if (!is.null(current_label_id) && !is.null(current_model_id)) {
+      store_threshold(current_label_id, current_model_id, current_threshold)
+    } else {
+      message("Label ID or Model ID is not available.")
     }
   })
 

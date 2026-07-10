@@ -249,3 +249,29 @@ get_species_info <- function(species_id) {
     name = species_info$name
   ))
 }
+
+# Store the current threshold value in the thresholds table
+store_threshold <- function(label_id, model_id, threshold_value) {
+  cat("Storing threshold for label_id:", label_id, "model_id:", model_id, "threshold:", threshold_value, "\n")
+
+  mutation <- sprintf('
+    mutation InsertThreshold {
+      insert_thresholds_one(object: {
+        label_id: %d,
+        model_id: %d,
+        threshold: %f,
+        is_final: false
+      }) {
+        id
+        label_id
+        model_id
+        threshold
+        set_at
+        is_final
+      }
+    }
+  ', label_id, model_id, threshold_value)
+
+  data <- execute_graphql_query(mutation, "Store threshold")
+  return(data$insert_thresholds_one)
+}
