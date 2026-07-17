@@ -11,7 +11,7 @@ threshold_menu <- tags$div(
   style = "display: flex; flex-direction: column; margin-right: 1em;",
   tags$div(
     class = "dropdown",
-    style = "background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 0.5rem; margin-bottom: 0.5em;margin-top: -0.5em;",
+    style = "background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 0.5rem; margin-bottom: 0.5em;margin-top: 0em;",
     tags$button(
       class = "btn btn-link dropdown-toggle",
       type = "button",
@@ -29,22 +29,10 @@ threshold_menu <- tags$div(
     tags$ul(
       class = "dropdown-menu",
       `aria-labelledby` = "thresholdMenuButton",
-      tags$li(
-        tags$a(
-          class = "dropdown-item",
-          href = "#",
-          onclick = "Shiny.setInputValue('set_preliminary_threshold_btn', Math.random()); return false;",  # Generate a random value to trigger the reactive event
-          "Set current threshold as preliminary"
-        )
-      ),
-      tags$li(
-        tags$a(
-          class = "dropdown-item",
-          href = "#",
-          onclick = "Shiny.setInputValue('reset_threshold_btn', Math.random()); return false;",  # Generate a random value to trigger the reactive event
-          "Reset to System Default"
-        )
-      )
+      uiOutput("set_preliminary_threshold_menu_item"),
+      uiOutput("reset_threshold_menu_item"),
+      # Menu item rendered from server so it can be enabled/disabled based on state
+      uiOutput("set_final_threshold_menu_item")
     )
   )
 )
@@ -54,19 +42,11 @@ threshold_input <- tags$div(
   id = "threshold_container",
   style = "position: absolute; top: 1em; gap: 0.5em; display: flex; align-items: center;",
   threshold_menu,
-  tags$label("Threshold", `for` = "threshold", style = "margin-top: -1em; white-space: nowrap; margin-right: 0.5em; font-size: small"),
-  numericInput(
-    inputId = "threshold",
-    label = NULL,
-    value = default_threshold,
-    min = 0.01,
-    max = 1,
-    step = 0.01,
-    width = "7em"
-  ),
+  tags$label("Threshold", `for` = "threshold", style = "margin-top: 0em; white-space: nowrap; margin-right: 0.5em; font-size: small"),
+  uiOutput("threshold_input"),
   tags$small(
     "Range: 0.01 to 1.00",
-    style = "margin-top: -1em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;" # Hint styling
+    style = "margin-top: 0em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;" # Hint styling
   ),
   uiOutput("threshold_status")
 )
