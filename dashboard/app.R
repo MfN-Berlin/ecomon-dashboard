@@ -448,6 +448,21 @@ server <- function(input, output, session) {
     }
   })
 
+  # Fetch species information when species_id changes
+  observe({
+    if (!is.null(url_species_id())) {
+      tryCatch({
+        species_data <- get_species_info(url_species_id())
+        species_info(species_data)
+        # Update the UI input with the species name
+        updateTextInput(session, "canvas_species", value = species_data$name)
+      }, error = function(e) {
+        cat("Error loading species info:", e$message, "\n")
+        species_info(NULL)
+      })
+    }
+  })
+
   # Fetch site information when site_ids change
   observe({
     if (!is.null(url_site_ids()) && length(url_site_ids()) > 0) {
