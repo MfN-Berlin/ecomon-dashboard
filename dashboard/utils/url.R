@@ -21,10 +21,8 @@
 #
 # Parameters:
 #   - session (Shiny session): The Shiny session object.
-#   - url_threshold (reactiveVal): Reactive value for the confidence threshold.
 #   - url_site_ids (reactiveVal): Reactive value for the site IDs.
 #   - url_species_id (reactiveVal): Reactive value for the species ID.
-#   - url_species_name (reactiveVal): Reactive value for the species name.
 #   - url_model_id (reactiveVal): Reactive value for the model ID.
 #   - url_year (reactiveVal): Reactive value for the year.
 #
@@ -33,7 +31,7 @@
 # -----------------------------------------------------------------------------
 parse_url_parameters <- function(
   session,
-  url_site_ids, url_species_id, url_model_id, url_year, url_threshold
+  url_site_ids, url_species_id, url_model_id, url_year
 ) {
   # Access the URL search string
   url_search <- session$clientData$url_search
@@ -75,14 +73,6 @@ parse_url_parameters <- function(
     if (!is.null(query$species)) {
       species_id <- as.numeric(query$species)
       url_species_id(species_id)
-    }
-
-    # Threshold
-    if (!is.null(query$threshold)) {
-      threshold_val <- as.numeric(query$threshold)
-      if (!is.na(threshold_val) && threshold_val >= 0.01 && threshold_val <= 1.0) {
-        url_threshold(threshold_val)
-      }
     }
   }
 }

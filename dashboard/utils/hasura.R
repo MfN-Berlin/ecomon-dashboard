@@ -249,3 +249,104 @@ get_species_info <- function(species_id) {
     name = species_info$name
   ))
 }
+
+# Fetch the latest threshold for a given label and model
+get_latest_threshold <- function(label_id, model_id) {
+  cat("Fetching latest threshold for label_id:", label_id, "model_id:", model_id, "\n")
+
+  query <- sprintf('
+    query GetLatestThreshold {
+      thresholds(
+        where: {
+          label_id: { _eq: %d }
+          model_id: { _eq: %d }
+        }
+        order_by: { set_at: desc }
+        limit: 1
+      ) {
+        threshold
+      }
+    }
+  ', label_id, model_id)
+
+  data <- tryCatch({
+    execute_graphql_query(query, "Latest threshold")
+  }, error = function(e) {
+    message("Error executing GraphQL query:", e$message)
+    return(NULL)
+  })
+
+  # Debug: Print the structure of the returned data
+  message("Debug: Data structure:", str(data))
+  message("Debug: Data type:", typeof(data))
+  message("Debug: Data names:", names(data))
+
+  # Debug: Print the structure of data$thresholds
+  if (exists("thresholds", where = data)) {
+    message("Debug: thresholds structure:", str(data$thresholds))
+    message("Debug: thresholds type:", typeof(data$thresholds))
+    if (length(data$thresholds) > 0) {
+      message("Debug: first element structure:", str(data$thresholds[[1]]))
+      message("Debug: first element type:", typeof(data$thresholds[[1]]))
+    }
+  }
+
+  # Check if data is a list and contains the expected structure
+  if (is.list(data) && exists("thresholds", where = data) && !is.null(data$thresholds) && length(data$thresholds) > 0) {
+    # Check if the first element is a list or a numeric value
+    if (is.list(data$thresholds[[1]])) {
+      return(data$thresholds[[1]]$threshold)
+    } else if (is.numeric(data$thresholds[[1]])) {
+      return(data$thresholds[[1]])
+    } else {
+      message("Unexpected data structure in thresholds")
+      return(NULL)
+    }
+  } else {
+    message("Data does not contain expected structure or is NULL")
+    return(NULL)
+  }
+}
+
+# Fetch the latest final threshold for a given label and model (is_final = true)
+get_latest_final_threshold <- function(label_id, model_id) {
+  cat("Fetching latest FINAL threshold for label_id:", label_id, "model_id:", model_id, "\n")
+
+  query <- sprintf('\n    query GetLatestFinalThreshold {\n      thresholds(\n        where: {\n          label_id: { _eq: %d }\n          model_id: { _eq: %d }\n          is_final: { _eq: true }\n        }\n        order_by: { set_at: desc }\n        limit: 1\n      ) {\n        threshold\n        is_final\n      }\n    }\n  ', label_id, model_id)
+
+  data <- tryCatch({
+    execute_graphql_query(query, "Latest final threshold")
+  }, error = function(e) {
+    message("Error executing GraphQL query:", e$message)
+    return(NULL)
+  })
+
+  if (is.list(data) && exists("thresholds", where = data) && !is.null(data$thresholds) && length(data$thresholds) > 0) {
+    if (is.list(data$thresholds[[1]])) {
+      return(list(threshold = data$thresholds[[1]]$threshold, is_final = data$thresholds[[1]]$is_final))
+    } else {
+      return(list(threshold = data$thresholds[[1]], is_final = TRUE))
+    }
+  }
+  return(NULL)
+}
+
+# Store the current threshold value in the thresholds table
+store_threshold <- function(label_id, model_id, threshold_value) {
+  cat("Storing threshold for label_id:", label_id, "model_id:", model_id, "threshold:", threshold_value, "\n")
+
+  mutation <- sprintf('\n    mutation InsertThreshold {\n      insert_thresholds_one(object: {\n        label_id: %d,\n        model_id: %d,\n        threshold: %f,\n        is_final: false\n      }) {\n        id\n        label_id\n        model_id\n        threshold\n        set_at\n        is_final\n      }\n    }\n  ', label_id, model_id, threshold_value)
+
+  data <- execute_graphql_query(mutation, "Store threshold")
+  return(data$insert_thresholds_one)
+}
+
+# Store the current threshold value as final in the thresholds table
+store_final_threshold <- function(label_id, model_id, threshold_value) {
+  cat("Storing final threshold for label_id:", label_id, "model_id:", model_id, "threshold:", threshold_value, "\n")
+
+  mutation <- sprintf('\n    mutation InsertFinalThreshold {\n      insert_thresholds_one(object: {\n        label_id: %d,\n        model_id: %d,\n        threshold: %f,\n        is_final: true\n      }) {\n        id\n        label_id\n        model_id\n        threshold\n        set_at\n        is_final\n      }\n    }\n  ', label_id, model_id, threshold_value)
+
+  data <- execute_graphql_query(mutation, "Store final threshold")
+  return(data$insert_thresholds_one)
+}

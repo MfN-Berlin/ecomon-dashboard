@@ -335,6 +335,7 @@ position: relative;
 
 #settings_btn {
   margin-left: auto; /* Push the cog button to the far right */
+  margin-top: 0em; /* Adjust vertical alignment */
 }
 
 .form-control:disabled, .form-control[readonly] {
