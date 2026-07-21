@@ -29,6 +29,7 @@ threshold_menu <- tags$div(
     tags$ul(
       class = "dropdown-menu",
       `aria-labelledby` = "thresholdMenuButton",
+      uiOutput("set_experimental_threshold_menu_item"),
       uiOutput("set_preliminary_threshold_menu_item"),
       uiOutput("reset_threshold_menu_item"),
       # Menu item rendered from server so it can be enabled/disabled based on state
