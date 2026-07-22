@@ -32,6 +32,7 @@ threshold_menu <- tags$div(
       uiOutput("set_experimental_threshold_menu_item"),
       uiOutput("set_preliminary_threshold_menu_item"),
       uiOutput("reset_threshold_menu_item"),
+      uiOutput("reset_to_last_db_value_menu_item"),
       # Menu item rendered from server so it can be enabled/disabled based on state
       uiOutput("set_final_threshold_menu_item")
     )
