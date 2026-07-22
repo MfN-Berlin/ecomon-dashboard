@@ -139,6 +139,9 @@ server <- function(input, output, session) {
   preliminary_set <- reactiveVal(FALSE)
   preliminary_threshold_value <- reactiveVal(NULL)
   final_set <- reactiveVal(FALSE)
+  
+  # Track if a final threshold exists in database (can be set externally)
+  final_threshold_exists_db <- reactiveVal(FALSE)
 
   # site info from Hasura
   site_info <- reactiveVal(NULL)
@@ -162,8 +165,8 @@ server <- function(input, output, session) {
   threshold_debounced <- debounce(reactive(input$threshold), 1000)
 
   output$threshold_input <- renderUI({
-    if (isTRUE(final_set()) || isTRUE(preliminary_set()) || isTRUE(experimental_set())) {
-      # Render a disabled native number input when final, preliminary, or experimental to ensure it's non-editable
+    if (isTRUE(final_set())) {
+      # Render a disabled native number input only when final to ensure it's non-editable
       return(tags$input(
         id = "threshold",
         type = "number",
@@ -244,6 +247,37 @@ server <- function(input, output, session) {
 
   # Reset threshold to system default
   observeEvent(input$reset_threshold_btn, {
+    current_label_id <- url_species_id()
+    current_model_id <- url_model_id()
+    
+    # Check if a final threshold exists in the database
+    if (!is.null(current_label_id) && !is.null(current_model_id) && 
+        final_threshold_exists(current_label_id, current_model_id)) {
+      # A final threshold was set externally - refresh the UI to show it as final
+      final_record <- get_latest_final_threshold(current_label_id, current_model_id)
+      if (!is.null(final_record) && !is.null(final_record$threshold)) {
+        updateNumericInput(session, "threshold", value = final_record$threshold)
+        output$threshold_status <- renderUI({
+          tags$div(
+            "This threshold is set as final for this species and model.",
+            style = "margin-top: 0em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;"
+          )
+        })
+        experimental_set(FALSE)
+        experimental_threshold_value(NULL)
+        preliminary_set(FALSE)
+        preliminary_threshold_value(NULL)
+        final_set(TRUE)
+        final_threshold_exists_db(TRUE)
+      }
+      # Show error message
+      showNotification(
+        "Cannot reset threshold: a final threshold has been set for this species and model.",
+        type = "error"
+      )
+      return()
+    }
+    
     default_threshold <- as.numeric(Sys.getenv("DEFAULT_THRESHOLD", unset = "0.5"))
     if (is.na(default_threshold) || default_threshold < 0.1 || default_threshold > 1.0) {
       default_threshold <- 0.5
@@ -309,6 +343,34 @@ server <- function(input, output, session) {
     current_label_id <- url_species_id()
     current_model_id <- url_model_id()
 
+    # Check if a final threshold exists in the database
+    if (!is.null(current_label_id) && !is.null(current_model_id) && 
+        final_threshold_exists(current_label_id, current_model_id)) {
+      # A final threshold was set externally - refresh the UI to show it as final
+      final_record <- get_latest_final_threshold(current_label_id, current_model_id)
+      if (!is.null(final_record) && !is.null(final_record$threshold)) {
+        updateNumericInput(session, "threshold", value = final_record$threshold)
+        output$threshold_status <- renderUI({
+          tags$div(
+            "This threshold is set as final for this species and model.",
+            style = "margin-top: 0em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;"
+          )
+        })
+        experimental_set(FALSE)
+        experimental_threshold_value(NULL)
+        preliminary_set(FALSE)
+        preliminary_threshold_value(NULL)
+        final_set(TRUE)
+        final_threshold_exists_db(TRUE)
+      }
+      # Show error message
+      showNotification(
+        "Cannot set experimental threshold: a final threshold has been set for this species and model.",
+        type = "error"
+      )
+      return()
+    }
+
     if (!is.null(current_label_id) && !is.null(current_model_id)) {
       store_threshold(current_label_id, current_model_id, current_threshold, "experimental")
       # Update the threshold status text
@@ -342,6 +404,34 @@ server <- function(input, output, session) {
     current_label_id <- url_species_id()
     current_model_id <- url_model_id()
 
+    # Check if a final threshold exists in the database
+    if (!is.null(current_label_id) && !is.null(current_model_id) && 
+        final_threshold_exists(current_label_id, current_model_id)) {
+      # A final threshold was set externally - refresh the UI to show it as final
+      final_record <- get_latest_final_threshold(current_label_id, current_model_id)
+      if (!is.null(final_record) && !is.null(final_record$threshold)) {
+        updateNumericInput(session, "threshold", value = final_record$threshold)
+        output$threshold_status <- renderUI({
+          tags$div(
+            "This threshold is set as final for this species and model.",
+            style = "margin-top: 0em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;"
+          )
+        })
+        experimental_set(FALSE)
+        experimental_threshold_value(NULL)
+        preliminary_set(FALSE)
+        preliminary_threshold_value(NULL)
+        final_set(TRUE)
+        final_threshold_exists_db(TRUE)
+      }
+      # Show error message
+      showNotification(
+        "Cannot set preliminary threshold: a final threshold has been set for this species and model.",
+        type = "error"
+      )
+      return()
+    }
+
     if (!is.null(current_label_id) && !is.null(current_model_id)) {
       store_preliminary_threshold(current_label_id, current_model_id, current_threshold)
       # Update the threshold status text
@@ -371,7 +461,7 @@ server <- function(input, output, session) {
 
   # Render the 'Set current threshold as experimental' menu item; disable only when final is set
   output$set_experimental_threshold_menu_item <- renderUI({
-    if (isTRUE(final_set())) {
+    if (isTRUE(final_set()) || isTRUE(final_threshold_exists_db())) {
       tags$li(
         tags$a(
           class = "dropdown-item disabled",
@@ -408,7 +498,7 @@ server <- function(input, output, session) {
 
   # Render the 'Set current threshold as preliminary' menu item; disable only when final is set
   output$set_preliminary_threshold_menu_item <- renderUI({
-    if (isTRUE(final_set())) {
+    if (isTRUE(final_set()) || isTRUE(final_threshold_exists_db())) {
       tags$li(
         tags$a(
           class = "dropdown-item disabled",
@@ -467,7 +557,7 @@ server <- function(input, output, session) {
 
   # Render the reset menu item; disable it only when a final threshold is set
   output$reset_threshold_menu_item <- renderUI({
-    if (isTRUE(final_set())) {
+    if (isTRUE(final_set()) || isTRUE(final_threshold_exists_db())) {
       tags$li(
         tags$a(
           class = "dropdown-item disabled",
@@ -547,8 +637,10 @@ server <- function(input, output, session) {
         preliminary_set(FALSE)
         preliminary_threshold_value(NULL)
         final_set(TRUE)
+        final_threshold_exists_db(TRUE)
       } else {
         # No final threshold found; fall back to latest (preliminary or experimental) threshold
+        final_threshold_exists_db(FALSE)
         latest_threshold <- get_latest_threshold(url_species_id(), url_model_id())
         if (!is.null(latest_threshold) && !is.null(latest_threshold$threshold)) {
           updateNumericInput(session, "threshold", value = latest_threshold$threshold)

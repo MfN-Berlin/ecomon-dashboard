@@ -401,6 +401,42 @@ store_preliminary_threshold <- function(label_id, model_id, threshold_value) {
   return(data$insert_thresholds_one)
 }
 
+# Check if a final threshold exists for a given label and model
+final_threshold_exists <- function(label_id, model_id) {
+  cat("Checking if final threshold exists for label_id:", label_id, "model_id:", model_id, "\n")
+
+  query <- sprintf('
+    query CheckFinalThreshold {
+      thresholds(
+        where: {
+          label_id: { _eq: %d }
+          model_id: { _eq: %d }
+          _or: [
+            { threshold_type: { _eq: "final" } }
+            { threshold_type: { _is_null: true }, is_final: { _eq: true } }
+          ]
+        }
+        limit: 1
+      ) {
+        id
+      }
+    }
+  ', label_id, model_id)
+
+  data <- tryCatch({
+    execute_graphql_query(query, "Check final threshold")
+  }, error = function(e) {
+    message("Error executing GraphQL query:", e$message)
+    return(FALSE)
+  })
+
+  if (is.list(data) && exists("thresholds", where = data) && 
+      !is.null(data$thresholds) && length(data$thresholds) > 0) {
+    return(TRUE)
+  }
+  return(FALSE)
+}
+
 # Reset threshold to system default in the thresholds table
 reset_threshold_to_default <- function(label_id, model_id, threshold_value) {
   cat("Resetting threshold for label_id:", label_id, "model_id:", model_id, "to default:", threshold_value, "\n")
