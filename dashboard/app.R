@@ -249,6 +249,14 @@ server <- function(input, output, session) {
       default_threshold <- 0.5
     }
     updateNumericInput(session, "threshold", value = default_threshold)
+    
+    # Update database threshold to default
+    current_label_id <- url_species_id()
+    current_model_id <- url_model_id()
+    if (!is.null(current_label_id) && !is.null(current_model_id)) {
+      reset_threshold_to_default(current_label_id, current_model_id, default_threshold)
+    }
+    
     # Check if there was a preliminary or experimental threshold and if it differs from default
     prev_val <- preliminary_threshold_value()
     exp_val <- experimental_threshold_value()
@@ -263,6 +271,12 @@ server <- function(input, output, session) {
           style = "margin-top: 0em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;"
         )
       })
+      # Reset flags to remove checkmarks
+      preliminary_set(FALSE)
+      preliminary_threshold_value(NULL)
+      experimental_set(FALSE)
+      experimental_threshold_value(NULL)
+      final_set(FALSE)
     } else if (isTRUE(experimental_set()) && !is.null(exp_val) && !is.na(exp_val) &&
                abs(as.numeric(default_threshold) - as.numeric(exp_val)) > tol) {
       # Default differs from experimental -> show override message
@@ -272,6 +286,12 @@ server <- function(input, output, session) {
           style = "margin-top: 0em; color: #6c757d; white-space: nowrap; font-size: 0.75em; margin-right: 0.5em;"
         )
       })
+      # Reset flags to remove checkmarks
+      experimental_set(FALSE)
+      experimental_threshold_value(NULL)
+      preliminary_set(FALSE)
+      preliminary_threshold_value(NULL)
+      final_set(FALSE)
     } else {
       # Clear any threshold status message and flags
       output$threshold_status <- renderUI({ NULL })
@@ -349,9 +369,9 @@ server <- function(input, output, session) {
     }
   })
 
-  # Render the 'Set current threshold as experimental' menu item; disable when preliminary or final is set
+  # Render the 'Set current threshold as experimental' menu item; disable only when final is set
   output$set_experimental_threshold_menu_item <- renderUI({
-    if (isTRUE(final_set()) || isTRUE(preliminary_set())) {
+    if (isTRUE(final_set())) {
       tags$li(
         tags$a(
           class = "dropdown-item disabled",
@@ -363,20 +383,32 @@ server <- function(input, output, session) {
         )
       )
     } else {
-      tags$li(
-        tags$a(
-          class = "dropdown-item",
-          href = "#",
-          onclick = "Shiny.setInputValue('set_experimental_threshold_btn', Math.random()); return false;",
-          "Set current threshold as experimental"
+      # Add checkmark when experimental is currently set
+      if (isTRUE(experimental_set())) {
+        tags$li(
+          tags$a(
+            class = "dropdown-item",
+            href = "#",
+            onclick = "Shiny.setInputValue('set_experimental_threshold_btn', Math.random()); return false;",
+            HTML("&#10003; Set current threshold as experimental")
+          )
         )
-      )
+      } else {
+        tags$li(
+          tags$a(
+            class = "dropdown-item",
+            href = "#",
+            onclick = "Shiny.setInputValue('set_experimental_threshold_btn', Math.random()); return false;",
+            "Set current threshold as experimental"
+          )
+        )
+      }
     }
   })
 
-  # Render the 'Set current threshold as preliminary' menu item; disable when experimental or final is set
+  # Render the 'Set current threshold as preliminary' menu item; disable only when final is set
   output$set_preliminary_threshold_menu_item <- renderUI({
-    if (isTRUE(final_set()) || isTRUE(experimental_set())) {
+    if (isTRUE(final_set())) {
       tags$li(
         tags$a(
           class = "dropdown-item disabled",
@@ -388,14 +420,26 @@ server <- function(input, output, session) {
         )
       )
     } else {
-      tags$li(
-        tags$a(
-          class = "dropdown-item",
-          href = "#",
-          onclick = "Shiny.setInputValue('set_preliminary_threshold_btn', Math.random()); return false;",
-          "Set current threshold as preliminary"
+      # Add checkmark when preliminary is currently set
+      if (isTRUE(preliminary_set())) {
+        tags$li(
+          tags$a(
+            class = "dropdown-item",
+            href = "#",
+            onclick = "Shiny.setInputValue('set_preliminary_threshold_btn', Math.random()); return false;",
+            HTML("&#10003; Set current threshold as preliminary")
+          )
         )
-      )
+      } else {
+        tags$li(
+          tags$a(
+            class = "dropdown-item",
+            href = "#",
+            onclick = "Shiny.setInputValue('set_preliminary_threshold_btn', Math.random()); return false;",
+            "Set current threshold as preliminary"
+          )
+        )
+      }
     }
   })
 
@@ -421,9 +465,9 @@ server <- function(input, output, session) {
     }
   })
 
-  # Render the reset menu item; disable it when a final threshold is set
+  # Render the reset menu item; disable it only when a final threshold is set
   output$reset_threshold_menu_item <- renderUI({
-    if (isTRUE(final_set()) || isTRUE(preliminary_set()) || isTRUE(experimental_set())) {
+    if (isTRUE(final_set())) {
       tags$li(
         tags$a(
           class = "dropdown-item disabled",

@@ -24,7 +24,7 @@ ALTER TABLE thresholds ALTER COLUMN threshold_type SET DEFAULT 'experimental';
 
 -- Step 5: Add a check constraint to ensure only valid values are stored (optional but recommended)
 ALTER TABLE thresholds ADD CONSTRAINT check_threshold_type 
-CHECK (threshold_type IN ('experimental', 'preliminary', 'final'));
+CHECK (threshold_type IN ('experimental', 'preliminary', 'final', 'default'));
 
 -- Step 6: Create indexes for better query performance (optional but recommended)
 CREATE INDEX IF NOT EXISTS idx_thresholds_label_model_type ON thresholds(label_id, model_id, threshold_type);
