@@ -131,7 +131,11 @@ server <- function(input, output, session) {
   url_year <- reactiveVal(NULL)
 
   # Reactive value for threshold
-  threshold <- reactiveVal(0.5)
+  default_threshold <- as.numeric(Sys.getenv("DEFAULT_THRESHOLD", unset = "0.5"))
+  if (is.na(default_threshold) || default_threshold < 0.1 || default_threshold > 1.0) {
+    default_threshold <- 0.5
+  }
+  threshold <- reactiveVal(default_threshold)
 
   # Track whether a threshold is present and its value
   experimental_set <- reactiveVal(FALSE)
@@ -646,9 +650,9 @@ server <- function(input, output, session) {
           updateNumericInput(session, "threshold", value = latest_threshold$threshold)
           
           # Check the threshold type and display appropriate message
-          threshold_type <- latest_threshold$threshold_type
+          threshold_type <- trimws(latest_threshold$threshold_type)
           
-          if (threshold_type == "preliminary") {
+          if (tolower(threshold_type) == "preliminary") {
             # Show the preliminary message
             output$threshold_status <- renderUI({
               tags$div(
@@ -662,7 +666,7 @@ server <- function(input, output, session) {
             preliminary_set(TRUE)
             preliminary_threshold_value(as.numeric(latest_threshold$threshold))
             final_set(FALSE)
-          } else if (threshold_type == "experimental") {
+          } else if (tolower(threshold_type) == "experimental") {
             # Show the experimental message
             output$threshold_status <- renderUI({
               tags$div(

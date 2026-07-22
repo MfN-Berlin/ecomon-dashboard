@@ -260,10 +260,7 @@ get_latest_threshold <- function(label_id, model_id) {
         where: {
           label_id: { _eq: %d }
           model_id: { _eq: %d }
-          _or: [
-            { threshold_type: { _in: ["experimental", "preliminary"] } }
-            { threshold_type: { _is_null: true } }
-          ]
+          threshold_type: { _neq: "final" }
         }
         order_by: { set_at: desc }
         limit: 1
@@ -279,27 +276,35 @@ get_latest_threshold <- function(label_id, model_id) {
     execute_graphql_query(query, "Latest threshold")
   }, error = function(e) {
     message("Error executing GraphQL query:", e$message)
-    return(NULL)
+    data <- NULL
   })
+  message("First query returned data structure:", str(data))
 
-  # Debug: Print the structure of the returned data
-  message("Debug: Data structure:", str(data))
-  message("Debug: Data type:", typeof(data))
-  message("Debug: Data names:", names(data))
-
-  # Debug: Print the structure of data$thresholds
-  if (exists("thresholds", where = data)) {
-    message("Debug: thresholds structure:", str(data$thresholds))
-    message("Debug: thresholds type:", typeof(data$thresholds))
-    if (length(data$thresholds) > 0) {
-      message("Debug: first element structure:", str(data$thresholds[[1]]))
-      message("Debug: first element type:", typeof(data$thresholds[[1]]))
-    }
+  # If no non-NULL threshold found, try to get a NULL threshold
+  if (is.null(data) || !is.list(data) || !exists("thresholds", where = data) || 
+      is.null(data$thresholds) || length(data$thresholds) == 0) {
+    query_null <- sprintf('\n      query GetLatestNullThreshold {\n        thresholds(\n          where: {\n            label_id: { _eq: %d }\n            model_id: { _eq: %d }\n            threshold_type: { _is_null: true }\n          }\n          order_by: { set_at: desc }\n          limit: 1\n        ) {\n          threshold\n          threshold_type\n          is_final\n        }\n      }\n    ', label_id, model_id)
+    
+    data <- tryCatch({
+      execute_graphql_query(query_null, "Latest null threshold")
+    }, error = function(e) {
+      message("Error executing GraphQL query:", e$message)
+      data <- NULL
+    })
   }
 
   # Check if data is a list and contains the expected structure
   if (is.list(data) && exists("thresholds", where = data) && !is.null(data$thresholds) && length(data$thresholds) > 0) {
-    first_elem <- data$thresholds[[1]]
+    # With simplifyVector=TRUE, data$thresholds might be a data frame or a list
+    first_elem <- data$thresholds
+    
+    # If it's a data frame, get the first row
+    if (is.data.frame(first_elem)) {
+      first_elem <- first_elem[1, ]
+    } else if (is.list(first_elem) && length(first_elem) > 0) {
+      # If it's a list of objects (multiple rows), get the first one
+      first_elem <- first_elem[[1]]
+    }
     
     # Check if the first element is a list/object with named fields
     if (is.list(first_elem) && length(first_elem) > 0 && !is.null(names(first_elem))) {
@@ -308,14 +313,22 @@ get_latest_threshold <- function(label_id, model_id) {
       is_final_val <- first_elem$is_final
       threshold_val <- first_elem$threshold
       
-      # If threshold_type is NULL but is_final is TRUE, treat as "final"
-      # If threshold_type is NULL but is_final is FALSE, treat as "preliminary" (old data)
-      if (is.null(threshold_type) && !is.null(is_final_val)) {
-        if (is_final_val) {
-          threshold_type <- "final"
+      # Handle NULL threshold_type based on is_final value
+      # If both are NULL, treat as preliminary for backwards compatibility
+      if (is.null(threshold_type)) {
+        if (!is.null(is_final_val)) {
+          if (is_final_val) {
+            threshold_type <- "final"
+          } else {
+            threshold_type <- "preliminary"
+          }
         } else {
+          # Both threshold_type and is_final are NULL - treat as preliminary
           threshold_type <- "preliminary"
         }
+      } else {
+        # Normalize the threshold_type: trim whitespace and convert to lowercase
+        threshold_type <- tolower(trimws(threshold_type))
       }
       return(list(threshold = threshold_val, threshold_type = threshold_type))
     } else if (is.numeric(first_elem)) {
@@ -336,7 +349,7 @@ get_latest_threshold <- function(label_id, model_id) {
 get_latest_final_threshold <- function(label_id, model_id) {
   cat("Fetching latest FINAL threshold for label_id:", label_id, "model_id:", model_id, "\n")
 
-  query <- sprintf('\n    query GetLatestFinalThreshold {\n      thresholds(\n        where: {\n          label_id: { _eq: %d }\n          model_id: { _eq: %d }\n          _or: [\n            { threshold_type: { _eq: "final" } }\n            { threshold_type: { _is_null: true }, is_final: { _eq: true } }\n          ]\n        }\n        order_by: { set_at: desc }\n        limit: 1\n      ) {\n        threshold\n        threshold_type\n        is_final\n      }\n    }\n  ', label_id, model_id)
+  query <- sprintf('\n    query GetLatestFinalThreshold {\n      thresholds(\n        where: {\n          label_id: { _eq: %d }\n          model_id: { _eq: %d }\n          threshold_type: { _eq: "final" }\n        }\n        order_by: { set_at: desc }\n        limit: 1\n      ) {\n        threshold\n        threshold_type\n        is_final\n      }\n    }\n  ', label_id, model_id)
 
   data <- tryCatch({
     execute_graphql_query(query, "Latest final threshold")
@@ -350,13 +363,7 @@ get_latest_final_threshold <- function(label_id, model_id) {
     
     if (is.list(first_elem) && length(first_elem) > 0 && !is.null(names(first_elem))) {
       threshold_type <- first_elem$threshold_type
-      is_final_val <- first_elem$is_final
       threshold_val <- first_elem$threshold
-      
-      # If threshold_type is NULL but is_final is TRUE, treat as "final"
-      if (is.null(threshold_type) && is_final_val) {
-        threshold_type <- "final"
-      }
       return(list(threshold = threshold_val, threshold_type = threshold_type))
     } else if (is.numeric(first_elem)) {
       # Old format - just a numeric value
@@ -411,10 +418,7 @@ final_threshold_exists <- function(label_id, model_id) {
         where: {
           label_id: { _eq: %d }
           model_id: { _eq: %d }
-          _or: [
-            { threshold_type: { _eq: "final" } }
-            { threshold_type: { _is_null: true }, is_final: { _eq: true } }
-          ]
+          threshold_type: { _eq: "final" }
         }
         limit: 1
       ) {
