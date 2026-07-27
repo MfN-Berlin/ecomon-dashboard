@@ -267,7 +267,6 @@ get_latest_threshold <- function(label_id, model_id) {
       ) {
         threshold
         threshold_type
-        is_final
       }
     }
   ', label_id, model_id)
@@ -283,7 +282,7 @@ get_latest_threshold <- function(label_id, model_id) {
   # If no non-NULL threshold found, try to get a NULL threshold
   if (is.null(data) || !is.list(data) || !exists("thresholds", where = data) || 
       is.null(data$thresholds) || length(data$thresholds) == 0) {
-    query_null <- sprintf('\n      query GetLatestNullThreshold {\n        thresholds(\n          where: {\n            label_id: { _eq: %d }\n            model_id: { _eq: %d }\n            threshold_type: { _is_null: true }\n          }\n          order_by: { set_at: desc }\n          limit: 1\n        ) {\n          threshold\n          threshold_type\n          is_final\n        }\n      }\n    ', label_id, model_id)
+    query_null <- sprintf('\n      query GetLatestNullThreshold {\n        thresholds(\n          where: {\n            label_id: { _eq: %d }\n            model_id: { _eq: %d }\n            threshold_type: { _is_null: true }\n          }\n          order_by: { set_at: desc }\n          limit: 1\n        ) {\n          threshold\n          threshold_type\n        }\n      }\n    ', label_id, model_id)
     
     data <- tryCatch({
       execute_graphql_query(query_null, "Latest null threshold")
@@ -349,7 +348,7 @@ get_latest_threshold <- function(label_id, model_id) {
 get_latest_final_threshold <- function(label_id, model_id) {
   cat("Fetching latest FINAL threshold for label_id:", label_id, "model_id:", model_id, "\n")
 
-  query <- sprintf('\n    query GetLatestFinalThreshold {\n      thresholds(\n        where: {\n          label_id: { _eq: %d }\n          model_id: { _eq: %d }\n          threshold_type: { _eq: "final" }\n        }\n        order_by: { set_at: desc }\n        limit: 1\n      ) {\n        threshold\n        threshold_type\n        is_final\n      }\n    }\n  ', label_id, model_id)
+  query <- sprintf('\n    query GetLatestFinalThreshold {\n      thresholds(\n        where: {\n          label_id: { _eq: %d }\n          model_id: { _eq: %d }\n          threshold_type: { _eq: "final" }\n        }\n        order_by: { set_at: desc }\n        limit: 1\n      ) {\n        threshold\n        threshold_type\n      }\n    }\n  ', label_id, model_id)
 
   data <- tryCatch({
     execute_graphql_query(query, "Latest final threshold")
