@@ -76,6 +76,39 @@ build_download_query <- function(species_id, model_id, site_id, year, threshold 
 }
 
 # -----------------------------------------------------------------------------
+# Function: build_thresholds_query
+# Description:
+#   Constructs a GraphQL query to fetch the latest thresholds (experimental,
+#   preliminary, final) for a specific model and label combination.
+#
+# Parameters:
+#   - model_id (integer): The ID of the model to filter by.
+#   - label_id (integer): The ID of the label to filter by.
+#
+# Returns:
+#   - A string containing the GraphQL query.
+# -----------------------------------------------------------------------------
+build_thresholds_query <- function(model_id, label_id) {
+  thresholds_query <- sprintf('
+  query GetThresholds {
+    thresholds(
+      where: {
+        model_id: { _eq: %d }
+        label_id: { _eq: %d }
+      }
+      order_by: { set_at: desc }
+    ) {
+      threshold_type
+      threshold
+      set_at
+    }
+  }
+  ', model_id, label_id)
+
+  return(thresholds_query)
+}
+
+# -----------------------------------------------------------------------------
 # Function: get_download_data
 # Description:
 #   Executes the GraphQL query built by `build_download_query`, validates the
@@ -116,6 +149,50 @@ get_download_data <- function(species_id, model_id, site_id, year, threshold = 0
 
   inference_results <- download_data$data$model_inference_results
 
+  # Fetch thresholds for this model and label
+  thresholds_query <- build_thresholds_query(model_id, species_id)
+  thresholds_response <- POST(
+    url = hasura_url,
+    add_headers(.headers = hasura_headers),
+    body = list(query = thresholds_query),
+    encode = "json"
+  )
+
+  # Validate thresholds response
+  if (http_status(thresholds_response)$category != "Success") {
+    stop("Failed to fetch thresholds from Hasura: ",
+         content(thresholds_response, "text", encoding = "UTF-8"))
+  }
+
+  thresholds_data <- content(thresholds_response, "parsed", simplifyVector = TRUE)
+
+  # Check for GraphQL errors in thresholds query
+  if (!is.null(thresholds_data$errors)) {
+    stop("Thresholds GraphQL query failed: ", paste(thresholds_data$errors, collapse = ", "))
+  }
+
+  # Process thresholds into a named vector by threshold_type
+  # Get the latest (first) threshold for each type from the ordered results
+  threshold_values <- c(
+    experimental = NA_real_,
+    preliminary = NA_real_,
+    final = NA_real_
+  )
+  
+  if (!is.null(thresholds_data$data$thresholds) && length(thresholds_data$data$thresholds) > 0) {
+    thresholds_list <- thresholds_data$data$thresholds
+    # Results are ordered by set_at desc, so first occurrence of each type is the latest
+    seen_types <- character(0)
+    for (t in seq_along(thresholds_list$threshold_type)) {
+      threshold_type <- thresholds_list$threshold_type[t]
+      if (!(threshold_type %in% seen_types) && threshold_type %in% c("experimental", "preliminary", "final")) {
+        seen_types <- c(seen_types, threshold_type)
+        threshold_val <- as.numeric(thresholds_list$threshold[t])
+        threshold_values[[threshold_type]] <- threshold_val
+      }
+    }
+  }
+
   # Return empty data.frame if no results
   if (is.null(inference_results) || length(inference_results) == 0) {
     return(data.frame(
@@ -128,11 +205,15 @@ get_download_data <- function(species_id, model_id, site_id, year, threshold = 0
       model_name = character(0),
       species = character(0),
       confidence = numeric(0),
+      experimental_threshold = character(0),
+      preliminary_threshold = character(0),
+      final_threshold = character(0),
       stringsAsFactors = FALSE
     ))
   }
 
   # Flatten nested data by accessing the nested data.frames directly
+  num_rows <- length(inference_results$confidence)
   csv_data <- data.frame(
     site_prefix = inference_results$record$site$prefix,
     site_name = inference_results$record$site$name,
@@ -143,8 +224,16 @@ get_download_data <- function(species_id, model_id, site_id, year, threshold = 0
     model_name = inference_results$model$name,
     species = inference_results$label$name,
     confidence = inference_results$confidence,
+    experimental_threshold = rep(threshold_values["experimental"], num_rows),
+    preliminary_threshold = rep(threshold_values["preliminary"], num_rows),
+    final_threshold = rep(threshold_values["final"], num_rows),
     stringsAsFactors = FALSE
   )
+
+  # Convert threshold columns: NA to empty string for clean CSV/Excel output
+  csv_data$experimental_threshold <- ifelse(is.na(csv_data$experimental_threshold), "", as.character(csv_data$experimental_threshold))
+  csv_data$preliminary_threshold <- ifelse(is.na(csv_data$preliminary_threshold), "", as.character(csv_data$preliminary_threshold))
+  csv_data$final_threshold <- ifelse(is.na(csv_data$final_threshold), "", as.character(csv_data$final_threshold))
 
   return(csv_data)
 }
