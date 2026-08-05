@@ -66,6 +66,7 @@ build_download_query <- function(species_id, model_id, site_id, year, threshold 
           prefix
         }
         record_datetime
+        filepath
       }
     }
   }
@@ -121,6 +122,7 @@ get_download_data <- function(species_id, model_id, site_id, year, threshold = 0
       site_prefix = character(0),
       site_name = character(0),
       record_datetime = character(0),
+      recording = character(0),
       start_time = character(0),
       end_time = character(0),
       model_name = character(0),
@@ -135,6 +137,7 @@ get_download_data <- function(species_id, model_id, site_id, year, threshold = 0
     site_prefix = inference_results$record$site$prefix,
     site_name = inference_results$record$site$name,
     record_datetime = inference_results$record$record_datetime,
+    recording = inference_results$record$filepath,
     start_time = inference_results$start_time,
     end_time = inference_results$end_time,
     model_name = inference_results$model$name,
