@@ -66,7 +66,7 @@ build_download_query <- function(species_id, model_id, site_id, year, threshold 
           prefix
         }
         record_datetime
-        filepath
+        filename
       }
     }
   }
@@ -178,7 +178,7 @@ get_download_data <- function(species_id, model_id, site_id, year, threshold = 0
     preliminary = NA_real_,
     final = NA_real_
   )
-  
+
   if (!is.null(thresholds_data$data$thresholds) && length(thresholds_data$data$thresholds) > 0) {
     thresholds_list <- thresholds_data$data$thresholds
     # Results are ordered by set_at desc, so first occurrence of each type is the latest
@@ -198,8 +198,9 @@ get_download_data <- function(species_id, model_id, site_id, year, threshold = 0
     return(data.frame(
       site_prefix = character(0),
       site_name = character(0),
-      record_datetime = character(0),
-      recording = character(0),
+      date = character(0),
+      time = character(0),
+      filename = character(0),
       start_time = character(0),
       end_time = character(0),
       model_name = character(0),
@@ -209,7 +210,7 @@ get_download_data <- function(species_id, model_id, site_id, year, threshold = 0
       VocalizationTypeCode = character(0),
       Manual_Trigger = character(0),
       Manual_OtherSounds_5s = character(0),
-      `Notes on the complete snippet (10-15s)` = character(0),
+      Notes_on_complete_snippet_10_15s = character(0),
       experimental_threshold = character(0),
       preliminary_threshold = character(0),
       final_threshold = character(0),
@@ -219,11 +220,19 @@ get_download_data <- function(species_id, model_id, site_id, year, threshold = 0
 
   # Flatten nested data by accessing the nested data.frames directly
   num_rows <- length(inference_results$confidence)
+  
+  # Split record_datetime into date and time
+  # Format is "YYYY-MM-DD HH:MM:SS" based on the database
+  datetime_values <- inference_results$record$record_datetime
+  date_values <- substr(datetime_values, 1, 10)
+  time_values <- substr(datetime_values, 12, 19)
+  
   csv_data <- data.frame(
     site_prefix = inference_results$record$site$prefix,
     site_name = inference_results$record$site$name,
-    record_datetime = inference_results$record$record_datetime,
-    recording = inference_results$record$filepath,
+    date = date_values,
+    time = time_values,
+    filename = inference_results$record$filename,
     start_time = inference_results$start_time,
     end_time = inference_results$end_time,
     model_name = inference_results$model$name,
@@ -233,7 +242,7 @@ get_download_data <- function(species_id, model_id, site_id, year, threshold = 0
     VocalizationTypeCode = rep("", num_rows),
     Manual_Trigger = rep("", num_rows),
     Manual_OtherSounds_5s = rep("", num_rows),
-    `Notes on the complete snippet (10-15s)` = rep("", num_rows),
+    Notes_on_complete_snippet_10_15s = rep("", num_rows),
     experimental_threshold = rep(threshold_values["experimental"], num_rows),
     preliminary_threshold = rep(threshold_values["preliminary"], num_rows),
     final_threshold = rep(threshold_values["final"], num_rows),
